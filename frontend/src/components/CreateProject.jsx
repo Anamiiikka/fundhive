@@ -1,23 +1,9 @@
 import React, { useState } from 'react';
 import { X, Upload, AlertCircle } from 'lucide-react';
 
-interface CreateProjectProps {
-  onClose: () => void;
-}
-
-type ProjectFormData = {
-  title: string;
-  description: string;
-  category: string;
-  fundingGoal: string;
-  equityOffered: string;
-  duration: string;
-  media: File | null;
-};
-
-export function CreateProject({ onClose }: CreateProjectProps) {
+export function CreateProject({ onClose }) {
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<ProjectFormData>({
+  const [formData, setFormData] = useState({
     title: '',
     description: '',
     category: '',
@@ -27,15 +13,14 @@ export function CreateProject({ onClose }: CreateProjectProps) {
     media: null
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setFormData({ ...formData, media: e.target.files[0] });
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle project creation
     console.log('Project data:', formData);
     onClose();
   };
@@ -236,7 +221,7 @@ export function CreateProject({ onClose }: CreateProjectProps) {
               className={`px-6 py-2 rounded-lg ${
                 step === 1
                   ? 'invisible'
-                  : 'bg-gray-200 text-gray-700 hover: bg-gray-300'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
               Back

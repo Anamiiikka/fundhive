@@ -5,34 +5,13 @@ import { UserProfile } from './components/UserProfile';
 import { Notifications } from './components/Notifications';
 import { Rocket, Search, TrendingUp, Briefcase, Code, Leaf, Cpu, Palette, Bell, UserCircle, Plus } from 'lucide-react';
 
-type Category = {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-};
-
-type TrendingProject = {
-  id: string;
-  title: string;
-  fundingPercentage: number;
-  hoursLeft: number;
-};
-
-type Notification = {
-  id: string;
-  type: 'investment' | 'comment' | 'like' | 'milestone';
-  message: string;
-  timestamp: Date;
-  read: boolean;
-};
-
 function App() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showCreateProject, setShowCreateProject] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([
+  const [notifications, setNotifications] = useState([
     {
       id: '1',
       type: 'investment',
@@ -49,7 +28,7 @@ function App() {
     }
   ]);
 
-  const categories: Category[] = [
+  const categories = [
     { id: 'tech', name: 'Technology', icon: <Cpu className="w-5 h-5" /> },
     { id: 'business', name: 'Business', icon: <Briefcase className="w-5 h-5" /> },
     { id: 'software', name: 'Software', icon: <Code className="w-5 h-5" /> },
@@ -57,7 +36,7 @@ function App() {
     { id: 'creative', name: 'Creative', icon: <Palette className="w-5 h-5" /> },
   ];
 
-  const trendingProjects: TrendingProject[] = [
+  const trendingProjects = [
     { id: '1', title: 'EcoCharge - Solar Power Bank', fundingPercentage: 85, hoursLeft: 48 },
     { id: '2', title: 'SmartLearn AI Tutor', fundingPercentage: 92, hoursLeft: 24 },
     { id: '3', title: 'Urban Vertical Farm', fundingPercentage: 75, hoursLeft: 72 },
@@ -68,7 +47,7 @@ function App() {
       username: "TechStartup",
       userAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
       content: {
-        type: "image" as const,
+        type: "image",
         url: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1600&q=80"
       },
       description: "Introducing our revolutionary AI-powered productivity platform that helps teams collaborate more effectively. Looking for seed funding to scale our operations.",
@@ -83,7 +62,7 @@ function App() {
       username: "GreenEnergy",
       userAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
       content: {
-        type: "image" as const,
+        type: "image",
         url: "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1600&q=80"
       },
       description: "Our innovative solar panel technology increases energy efficiency by 40%. Join us in revolutionizing renewable energy.",

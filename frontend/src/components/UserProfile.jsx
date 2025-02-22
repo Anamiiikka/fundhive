@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
 import { X, User, Briefcase, ChevronRight, Settings, LogOut } from 'lucide-react';
 
-interface UserProfileProps {
-  onClose: () => void;
-}
-
-export function UserProfile({ onClose }: UserProfileProps) {
-  const [activeTab, setActiveTab] = useState<'investments' | 'projects'>('investments');
+export function UserProfile({ onClose }) {
+  const [activeTab, setActiveTab] = useState('investments');
 
   const investments = [
     { 

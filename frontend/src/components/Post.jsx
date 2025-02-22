@@ -2,42 +2,21 @@ import React, { useState } from 'react';
 import { Heart, MessageCircle, Share2, DollarSign, X, Award, Link, Twitter, Facebook, Linkedin } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-interface PostProps {
-  username: string;
-  userAvatar: string;
-  content: {
-    type: 'image' | 'video';
-    url: string;
-  };
-  description: string;
-  businessDetails: {
-    title: string;
-    fundingGoal: number;
-    equityOffered: number;
-  };
-}
-
-interface Reward {
-  amount: number;
-  title: string;
-  description: string;
-}
-
-export function Post({ username, userAvatar, content, description, businessDetails }: PostProps) {
+export function Post({ username, userAvatar, content, description, businessDetails }) {
   const [liked, setLiked] = useState(false);
   const [likes, setLikes] = useState(0);
   const [showComments, setShowComments] = useState(false);
   const [comment, setComment] = useState('');
-  const [comments, setComments] = useState<string[]>([]);
+  const [comments, setComments] = useState([]);
   const [showInvestModal, setShowInvestModal] = useState(false);
   const [showCrowdfundModal, setShowCrowdfundModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [investmentAmount, setInvestmentAmount] = useState('');
   const [crowdfundAmount, setCrowdfundAmount] = useState('');
   const [currentFunding, setCurrentFunding] = useState(0);
-  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [selectedReward, setSelectedReward] = useState(null);
 
-  const rewards: Reward[] = [
+  const rewards = [
     { amount: 50, title: 'Early Supporter', description: 'Get exclusive updates and behind-the-scenes content' },
     { amount: 200, title: 'Premium Backer', description: 'Early access to the product + exclusive updates' },
     { amount: 500, title: 'VIP Supporter', description: 'All previous rewards + personalized thank you video' },
@@ -48,7 +27,7 @@ export function Post({ username, userAvatar, content, description, businessDetai
     setLikes(prev => liked ? prev - 1 : prev + 1);
   };
 
-  const handleComment = (e: React.FormEvent) => {
+  const handleComment = (e) => {
     e.preventDefault();
     if (comment.trim()) {
       setComments(prev => [...prev, comment]);
@@ -56,7 +35,7 @@ export function Post({ username, userAvatar, content, description, businessDetai
     }
   };
 
-  const handleInvest = (e: React.FormEvent) => {
+  const handleInvest = (e) => {
     e.preventDefault();
     const amount = parseFloat(investmentAmount);
     if (amount > 0) {
@@ -67,7 +46,7 @@ export function Post({ username, userAvatar, content, description, businessDetai
     }
   };
 
-  const handleCrowdfund = (e: React.FormEvent) => {
+  const handleCrowdfund = (e) => {
     e.preventDefault();
     const amount = parseFloat(crowdfundAmount);
     if (amount > 0) {
@@ -78,7 +57,7 @@ export function Post({ username, userAvatar, content, description, businessDetai
     }
   };
 
-  const handleShare = (platform: 'copy' | 'twitter' | 'facebook' | 'linkedin') => {
+  const handleShare = (platform) => {
     const url = window.location.href;
     const text = `Check out ${businessDetails.title} on FundHive!`;
 
@@ -290,7 +269,7 @@ export function Post({ username, userAvatar, content, description, businessDetai
                       }}
                       className={cn(
                         "w-full p-4 rounded-lg border-2 text-left transition-all",
-                        selectedReward?.amount === reward.amount
+                        selectedReward && selectedReward.amount === reward.amount
                           ? "border-blue-500 bg-blue-50"
                           : "border-gray-200 hover:border-blue-300"
                       )}

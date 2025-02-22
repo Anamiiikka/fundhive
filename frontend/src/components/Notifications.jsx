@@ -1,24 +1,8 @@
 import React from 'react';
 import { Bell, MessageCircle, Heart, Target, X } from 'lucide-react';
 
-type NotificationType = 'investment' | 'comment' | 'like' | 'milestone';
-
-interface Notification {
-  id: string;
-  type: NotificationType;
-  message: string;
-  timestamp: Date;
-  read: boolean;
-}
-
-interface NotificationsProps {
-  notifications: Notification[];
-  onClose: () => void;
-  onMarkAsRead: (id: string) => void;
-}
-
-export function Notifications({ notifications, onClose, onMarkAsRead }: NotificationsProps) {
-  const getIcon = (type: NotificationType) => {
+export function Notifications({ notifications, onClose, onMarkAsRead }) {
+  const getIcon = (type) => {
     switch (type) {
       case 'investment':
         return <Bell className="w-5 h-5 text-green-500" />;
