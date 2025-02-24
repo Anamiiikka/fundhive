@@ -12,6 +12,7 @@ export function useCreateProject({ onClose }) {
     equityOffered: '',
     duration: '30',
     media: null,
+    panCard: '', // PAN card remains in formData
   });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -20,6 +21,25 @@ export function useCreateProject({ onClose }) {
     if (e.target.files && e.target.files[0]) {
       setFormData({ ...formData, media: e.target.files[0] });
     }
+  };
+
+  const validatePanCard = (pan) => {
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    return panRegex.test(pan);
+  };
+
+  const handleNextStep = (nextStep) => {
+    // Validate PAN card only when moving from Step 2 to Step 3
+    if (step === 2 && !formData.panCard) {
+      setError('PAN Card number is required');
+      return;
+    }
+    if (step === 2 && !validatePanCard(formData.panCard)) {
+      setError('Please enter a valid PAN Card number (e.g., ABCDE1234F)');
+      return;
+    }
+    setError(null);
+    setStep(nextStep);
   };
 
   const handleSubmit = async (e) => {
@@ -36,6 +56,7 @@ export function useCreateProject({ onClose }) {
     formDataToSend.append('duration', formData.duration);
     formDataToSend.append('name', user.name);
     formDataToSend.append('email', user.email);
+    formDataToSend.append('panCard', formData.panCard);
     if (formData.media) {
       formDataToSend.append('media', formData.media);
     }
@@ -68,7 +89,7 @@ export function useCreateProject({ onClose }) {
 
   return {
     step,
-    setStep,
+    setStep: handleNextStep, // Custom step handler for validation
     formData,
     setFormData,
     error,

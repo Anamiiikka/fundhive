@@ -51,6 +51,22 @@ function StepTwo({ formData, setFormData, loading }) {
           <option value="90">90 days</option>
         </select>
       </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">PAN Card Number</label>
+        <input
+          type="text"
+          value={formData.panCard}
+          onChange={(e) => setFormData({ ...formData, panCard: e.target.value.toUpperCase() })}
+          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="e.g., ABCDE1234F"
+          maxLength={10}
+          required
+          disabled={loading}
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          Enter a valid 10-character PAN Card number (5 letters, 4 numbers, 1 letter)
+        </p>
+      </div>
     </div>
   );
 }

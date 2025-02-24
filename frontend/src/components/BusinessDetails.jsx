@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DollarSign } from 'lucide-react';
 
 function BusinessDetails({
@@ -9,6 +9,14 @@ function BusinessDetails({
   setShowCrowdfundModal,
   error,
 }) {
+  const [cibilScore, setCibilScore] = useState(null);
+
+  // Generate a random CIBIL score between 650 and 800 when the component mounts
+  useEffect(() => {
+    const randomScore = Math.floor(Math.random() * (800 - 650 + 1)) + 650;
+    setCibilScore(randomScore);
+  }, []); // Empty dependency array ensures this runs only once on mount
+
   return (
     <div className="mt-6 bg-gray-50 p-4 rounded-lg">
       <h3 className="font-semibold text-lg">{businessDetails.title}</h3>
@@ -27,6 +35,24 @@ function BusinessDetails({
           <p className="text-sm text-gray-600">{progressPercentage.toFixed(1)}% of goal reached</p>
         </div>
         <p className="text-sm text-gray-600">Equity Offered: {businessDetails.equityOffered}%</p>
+        {/* CIBIL Score Section */}
+        <div className="mt-2">
+          <p className="text-sm text-gray-600">
+            CIBIL Score:{' '}
+            <span className="font-medium">
+              {cibilScore !== null ? cibilScore : 'Calculating...'}
+            </span>{' '}
+            / 900
+          </p>
+          <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+            <div
+              className={`h-2 rounded-full transition-all duration-500 ${
+                cibilScore >= 750 ? 'bg-green-500' : cibilScore >= 700 ? 'bg-yellow-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${(cibilScore / 900) * 100}%` }}
+            ></div>
+          </div>
+        </div>
         <div className="flex space-x-3 mt-4">
           <button
             onClick={() => setShowInvestModal(true)}
