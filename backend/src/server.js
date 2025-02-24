@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path'); // Add path module
 const projectRoutes = require('./routes/projects');
 
 dotenv.config();
@@ -9,14 +10,17 @@ dotenv.config();
 const app = express();
 
 // Middleware
-app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies (optional, for form submissions)
-app.use(cors({ origin: 'http://localhost:5173' })); // Allow frontend (Vite default port)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors({ origin: 'http://localhost:5173' }));
+
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 app.use('/api', projectRoutes);
 
-// MongoDB Connection (removed deprecated options)
+// MongoDB Connection
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log('Connected to MongoDB Atlas'))

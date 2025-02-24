@@ -8,7 +8,7 @@ import { Notifications } from './components/Notifications';
 import { Rocket, Search, TrendingUp, Briefcase, Code, Leaf, Cpu, Palette, Bell, UserCircle, Plus } from 'lucide-react';
 
 function App() {
-  const { user, isAuthenticated, isLoading } = useAuth0();
+  const { user, isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
   const navigate = useNavigate();
 
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -37,7 +37,6 @@ function App() {
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch projects when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       fetchProjects();
@@ -48,9 +47,10 @@ function App() {
     setLoadingPosts(true);
     setError(null);
     try {
+      const token = await getAccessTokenSilently();
       const response = await fetch('http://localhost:5000/api/projects', {
         headers: {
-          'X-User-ID': user.sub, // Send Auth0 user ID
+          'X-User-ID': user.sub,
         },
       });
 
@@ -60,13 +60,13 @@ function App() {
 
       const projects = await response.json();
 
-      // Transform projects into posts format
       const fetchedPosts = projects.map((project) => ({
-        username: project.userId, // Ideally, fetch username from User model
-        userAvatar: 'https://via.placeholder.com/64', // Fetch from User model later
+        id: project._id,
+        username: project.userId === user.sub ? user.name : project.userId,
+        userAvatar: project.userId === user.sub ? user.picture || 'https://via.placeholder.com/64' : 'https://via.placeholder.com/64',
         content: {
           type: project.mediaUrl?.includes('.mp4') ? 'video' : 'image',
-          url: project.mediaUrl || 'https://via.placeholder.com/400',
+          url: project.mediaUrl ? `http://localhost:5000${project.mediaUrl}` : 'https://via.placeholder.com/400',
         },
         description: project.description,
         businessDetails: {
@@ -75,17 +75,23 @@ function App() {
           equityOffered: project.equityOffered,
         },
         category: project.category,
-        currentFunding: project.currentFunding || 0, // Add if needed in Post.jsx
+        currentFunding: project.currentFunding || 0,
+        likes: project.likes || [],
+        comments: project.comments || [],
+        startDate: project.startDate, // Added for hoursLeft calculation
+        duration: project.duration,
       }));
       setPosts(fetchedPosts);
 
-      // Calculate trending projects (e.g., top 3 by funding percentage)
       const trending = projects
         .map((project) => ({
           id: project._id,
           title: project.title,
           fundingPercentage: Math.min((project.currentFunding / project.fundingGoal) * 100, 100),
-          hoursLeft: Math.floor((new Date().setDate(new Date().getDate() + project.duration) - Date.now()) / (1000 * 60 * 60)), // Rough estimate
+          hoursLeft: Math.max(
+            0,
+            Math.floor((new Date(project.startDate).getTime() + project.duration * 24 * 60 * 60 * 1000 - Date.now()) / (1000 * 60 * 60))
+          ),
         }))
         .sort((a, b) => b.fundingPercentage - a.fundingPercentage)
         .slice(0, 3);
@@ -98,10 +104,180 @@ function App() {
     }
   };
 
-  // Handle project creation to refresh posts
+  const handleLike = async (postId) => {
+    try {
+      const post = posts.find((p) => p.id === postId);
+      const alreadyLiked = post.likes.includes(user.sub);
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.id === postId
+            ? { ...p, likes: alreadyLiked ? p.likes.filter((id) => id !== user.sub) : [...p.likes, user.sub] }
+            : p
+        )
+      );
+
+      const response = await fetch(`http://localhost:5000/api/posts/${postId}/like`, {
+        method: 'POST',
+        headers: {
+          'X-User-ID': user.sub,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.sub }),
+      });
+
+      if (!response.ok) throw new Error('Failed to like post');
+      const updatedProject = await response.json();
+      setPosts((prevPosts) =>
+        prevPosts.map((p) => (p.id === postId ? { ...p, likes: updatedProject.project.likes } : p))
+      );
+    } catch (err) {
+      console.error('Error liking post:', err);
+      setError(err.message);
+      fetchProjects();
+    }
+  };
+
+  const handleComment = async (postId, commentText) => {
+    try {
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.id === postId
+            ? { ...p, comments: [...p.comments, { userId: user.sub, content: `${user.name}: ${commentText}` }] }
+            : p
+        )
+      );
+
+      const response = await fetch(`http://localhost:5000/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: {
+          'X-User-ID': user.sub,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.sub, content: `${user.name}: ${commentText}` }),
+      });
+
+      if (!response.ok) throw new Error('Failed to add comment');
+      const updatedProject = await response.json();
+      setPosts((prevPosts) =>
+        prevPosts.map((p) => (p.id === postId ? { ...p, comments: updatedProject.project.comments } : p))
+      );
+    } catch (err) {
+      console.error('Error adding comment:', err);
+      setError(err.message);
+      fetchProjects();
+    }
+  };
+
+  const handleInvest = async (postId, amount) => {
+    try {
+      // Optimistic update
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.id === postId ? { ...p, currentFunding: p.currentFunding + amount } : p
+        )
+      );
+      updateTrendingProjectsOptimistically(postId, amount);
+
+      const response = await fetch(`http://localhost:5000/api/posts/${postId}/invest`, {
+        method: 'POST',
+        headers: {
+          'X-User-ID': user.sub,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.sub, amount }),
+      });
+
+      if (!response.ok) throw new Error('Failed to invest');
+      const updatedProject = await response.json();
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.id === postId ? { ...p, currentFunding: updatedProject.project.currentFunding } : p
+        )
+      );
+      updateTrendingProjects(updatedProject.project);
+    } catch (err) {
+      console.error('Error investing:', err);
+      setPosts((prevPosts) =>
+        prevPosts.map((p) => (p.id === postId ? { ...p, currentFunding: p.currentFunding - amount } : p))
+      ); // Revert optimistic update
+      updateTrendingProjectsOptimistically(postId, -amount); // Revert trending
+      throw err; // Pass error to Post.jsx
+    }
+  };
+
+  const handleCrowdfund = async (postId, amount) => {
+    try {
+      // Optimistic update
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.id === postId ? { ...p, currentFunding: p.currentFunding + amount } : p
+        )
+      );
+      updateTrendingProjectsOptimistically(postId, amount);
+
+      const response = await fetch(`http://localhost:5000/api/posts/${postId}/crowdfund`, {
+        method: 'POST',
+        headers: {
+          'X-User-ID': user.sub,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.sub, amount }),
+      });
+
+      if (!response.ok) throw new Error('Failed to crowdfund');
+      const updatedProject = await response.json();
+      setPosts((prevPosts) =>
+        prevPosts.map((p) =>
+          p.id === postId ? { ...p, currentFunding: updatedProject.project.currentFunding } : p
+        )
+      );
+      updateTrendingProjects(updatedProject.project);
+    } catch (err) {
+      console.error('Error crowdfunding:', err);
+      setPosts((prevPosts) =>
+        prevPosts.map((p) => (p.id === postId ? { ...p, currentFunding: p.currentFunding - amount } : p))
+      ); // Revert optimistic update
+      updateTrendingProjectsOptimistically(postId, -amount); // Revert trending
+      throw err; // Pass error to Post.jsx
+    }
+  };
+
+  const updateTrendingProjectsOptimistically = (postId, amountDelta) => {
+    setTrendingProjects((prevTrending) =>
+      prevTrending.map((project) => {
+        if (project.id === postId) {
+          const post = posts.find((p) => p.id === postId);
+          const newFunding = post.currentFunding + amountDelta;
+          return {
+            ...project,
+            fundingPercentage: Math.min((newFunding / post.businessDetails.fundingGoal) * 100, 100),
+          };
+        }
+        return project;
+      })
+    );
+  };
+
+  const updateTrendingProjects = (updatedProject) => {
+    setTrendingProjects((prevTrending) =>
+      prevTrending.map((project) =>
+        project.id === updatedProject._id
+          ? {
+              ...project,
+              fundingPercentage: Math.min((updatedProject.currentFunding / updatedProject.fundingGoal) * 100, 100),
+              hoursLeft: Math.max(
+                0,
+                Math.floor((new Date(updatedProject.startDate).getTime() + updatedProject.duration * 24 * 60 * 60 * 1000 - Date.now()) / (1000 * 60 * 60))
+              ),
+            }
+          : project
+      )
+    );
+  };
+
   const handleProjectCreated = () => {
     setShowCreateProject(false);
-    fetchProjects(); // Refresh posts after creating a new project
+    fetchProjects();
   };
 
   if (isLoading) {
@@ -167,23 +343,17 @@ function App() {
                     notifications={notifications}
                     onClose={() => setShowNotifications(false)}
                     onMarkAsRead={(id) => {
-                      setNotifications(
-                        notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
-                      );
+                      setNotifications(notifications.map((n) => (n.id === id ? { ...n, read: true } : n)));
                     }}
                   />
                 )}
               </div>
-              <button
-                onClick={() => setShowProfile(!showProfile)}
-                className="text-gray-600 hover:text-gray-900"
-              >
+              <button onClick={() => setShowProfile(!showProfile)} className="text-gray-600 hover:text-gray-900">
                 <UserCircle className="w-6 h-6" />
               </button>
             </nav>
           </div>
 
-          {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
@@ -204,9 +374,7 @@ function App() {
             {categories.map((category) => (
               <button
                 key={category.id}
-                onClick={() =>
-                  setSelectedCategory(selectedCategory === category.id ? null : category.id)
-                }
+                onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
                   selectedCategory === category.id ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
                 }`}
@@ -221,11 +389,7 @@ function App() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {error && (
-          <div className="mb-8 p-4 bg-red-100 text-red-700 rounded-lg">
-            {error}
-          </div>
-        )}
+        {error && <div className="mb-8 p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>}
 
         {/* Trending Section */}
         <div className="bg-white rounded-xl shadow-md p-6 mb-8">
@@ -238,17 +402,11 @@ function App() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {trendingProjects.map((project) => (
-                <div
-                  key={project.id}
-                  className="p-4 border rounded-lg hover:shadow-md transition-shadow"
-                >
+                <div key={project.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
                   <h3 className="font-medium mb-2">{project.title}</h3>
                   <div className="space-y-2">
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${project.fundingPercentage}%` }}
-                      ></div>
+                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${project.fundingPercentage}%` }}></div>
                     </div>
                     <div className="flex justify-between text-sm text-gray-600">
                       <span>{project.fundingPercentage.toFixed(1)}% funded</span>
@@ -268,8 +426,16 @@ function App() {
           ) : filteredPosts.length === 0 ? (
             <div>No projects found.</div>
           ) : (
-            filteredPosts.map((post, index) => (
-              <Post key={index} {...post} />
+            filteredPosts.map((post) => (
+              <Post
+                key={post.id}
+                {...post}
+                userSub={user.sub}
+                onLike={() => handleLike(post.id)}
+                onComment={(commentText) => handleComment(post.id, commentText)}
+                onInvest={handleInvest}
+                onCrowdfund={handleCrowdfund}
+              />
             ))
           )}
         </div>
@@ -277,9 +443,7 @@ function App() {
 
       {/* Modals */}
       {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
-      {showCreateProject && (
-        <CreateProject onClose={handleProjectCreated} />
-      )}
+      {showCreateProject && <CreateProject onClose={handleProjectCreated} />}
     </div>
   );
 }

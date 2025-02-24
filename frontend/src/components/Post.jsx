@@ -2,19 +2,31 @@ import React, { useState } from 'react';
 import { Heart, MessageCircle, Share2, DollarSign, X, Award, Link, Twitter, Facebook, Linkedin } from 'lucide-react';
 import { cn } from '../lib/utils';
 
-export function Post({ username, userAvatar, content, description, businessDetails }) {
-  const [liked, setLiked] = useState(false);
-  const [likes, setLikes] = useState(0);
+export function Post({
+  id,
+  username,
+  userAvatar,
+  content,
+  description,
+  businessDetails,
+  likes,
+  comments,
+  onLike,
+  onComment,
+  currentFunding,
+  userSub,
+  onInvest,
+  onCrowdfund,
+}) {
   const [showComments, setShowComments] = useState(false);
   const [comment, setComment] = useState('');
-  const [comments, setComments] = useState([]);
   const [showInvestModal, setShowInvestModal] = useState(false);
   const [showCrowdfundModal, setShowCrowdfundModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [investmentAmount, setInvestmentAmount] = useState('');
   const [crowdfundAmount, setCrowdfundAmount] = useState('');
-  const [currentFunding, setCurrentFunding] = useState(0);
   const [selectedReward, setSelectedReward] = useState(null);
+  const [error, setError] = useState(null); // Added for error display
 
   const rewards = [
     { amount: 50, title: 'Early Supporter', description: 'Get exclusive updates and behind-the-scenes content' },
@@ -22,38 +34,41 @@ export function Post({ username, userAvatar, content, description, businessDetai
     { amount: 500, title: 'VIP Supporter', description: 'All previous rewards + personalized thank you video' },
   ];
 
-  const handleLike = () => {
-    setLiked(!liked);
-    setLikes(prev => liked ? prev - 1 : prev + 1);
-  };
-
-  const handleComment = (e) => {
+  const handleCommentSubmit = (e) => {
     e.preventDefault();
     if (comment.trim()) {
-      setComments(prev => [...prev, comment]);
+      onComment(comment);
       setComment('');
     }
   };
 
-  const handleInvest = (e) => {
+  const handleInvest = async (e) => {
     e.preventDefault();
     const amount = parseFloat(investmentAmount);
     if (amount > 0) {
-      setCurrentFunding(prev => prev + amount);
-      alert(`Investment of $${amount.toLocaleString()} processed for ${businessDetails.title}`);
-      setShowInvestModal(false);
-      setInvestmentAmount('');
+      setError(null); // Clear previous errors
+      try {
+        await onInvest(id, amount); // Optimistic update handled in App.jsx
+        setShowInvestModal(false);
+        setInvestmentAmount('');
+      } catch (err) {
+        setError(err.message); // Display error in UI
+      }
     }
   };
 
-  const handleCrowdfund = (e) => {
+  const handleCrowdfund = async (e) => {
     e.preventDefault();
     const amount = parseFloat(crowdfundAmount);
     if (amount > 0) {
-      setCurrentFunding(prev => prev + amount);
-      alert(`Crowdfunding contribution of $${amount.toLocaleString()} processed for ${businessDetails.title}`);
-      setShowCrowdfundModal(false);
-      setCrowdfundAmount('');
+      setError(null); // Clear previous errors
+      try {
+        await onCrowdfund(id, amount); // Optimistic update handled in App.jsx
+        setShowCrowdfundModal(false);
+        setCrowdfundAmount('');
+      } catch (err) {
+        setError(err.message); // Display error in UI
+      }
     }
   };
 
@@ -74,6 +89,8 @@ export function Post({ username, userAvatar, content, description, businessDetai
         break;
       case 'linkedin':
         window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`);
+        break;
+      default:
         break;
     }
     setShowShareModal(false);
@@ -101,27 +118,17 @@ export function Post({ username, userAvatar, content, description, businessDetai
       {/* Actions */}
       <div className="p-4">
         <div className="flex items-center space-x-4">
-          <button 
-            onClick={handleLike}
-            className="flex items-center space-x-1"
-          >
-            <Heart className={cn(
-              "w-6 h-6 transition-colors",
-              liked ? "fill-red-500 text-red-500" : "text-gray-600"
-            )} />
-            <span>{likes}</span>
+          <button onClick={onLike} className="flex items-center space-x-1">
+            <Heart
+              className={cn('w-6 h-6 transition-colors', likes.includes(userSub) ? 'fill-red-500 text-red-500' : 'text-gray-600')}
+            />
+            <span>{likes.length}</span>
           </button>
-          <button 
-            onClick={() => setShowComments(!showComments)}
-            className="flex items-center space-x-1 text-gray-600"
-          >
+          <button onClick={() => setShowComments(!showComments)} className="flex items-center space-x-1 text-gray-600">
             <MessageCircle className="w-6 h-6" />
             <span>{comments.length}</span>
           </button>
-          <button 
-            onClick={() => setShowShareModal(true)} 
-            className="flex items-center space-x-1 text-gray-600"
-          >
+          <button onClick={() => setShowShareModal(true)} className="flex items-center space-x-1 text-gray-600">
             <Share2 className="w-6 h-6" />
           </button>
         </div>
@@ -139,25 +146,23 @@ export function Post({ username, userAvatar, content, description, businessDetai
                 <span>Goal: ${businessDetails.fundingGoal.toLocaleString()}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div 
+                <div
                   className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
                   style={{ width: `${progressPercentage}%` }}
                 ></div>
               </div>
-              <p className="text-sm text-gray-600">
-                {progressPercentage.toFixed(1)}% of goal reached
-              </p>
+              <p className="text-sm text-gray-600">{progressPercentage.toFixed(1)}% of goal reached</p>
             </div>
             <p className="text-sm text-gray-600">Equity Offered: {businessDetails.equityOffered}%</p>
             <div className="flex space-x-3 mt-4">
-              <button 
+              <button
                 onClick={() => setShowInvestModal(true)}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
               >
                 <DollarSign className="w-4 h-4" />
                 <span>Invest Now</span>
               </button>
-              <button 
+              <button
                 onClick={() => setShowCrowdfundModal(true)}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
               >
@@ -165,12 +170,15 @@ export function Post({ username, userAvatar, content, description, businessDetai
               </button>
             </div>
           </div>
+          {error && (
+            <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg">{error}</div>
+          )}
         </div>
 
         {/* Comments Section */}
         {showComments && (
           <div className="mt-4">
-            <form onSubmit={handleComment} className="flex space-x-2">
+            <form onSubmit={handleCommentSubmit} className="flex space-x-2">
               <input
                 type="text"
                 value={comment}
@@ -188,7 +196,7 @@ export function Post({ username, userAvatar, content, description, businessDetai
             <div className="mt-4 space-y-2">
               {comments.map((c, i) => (
                 <div key={i} className="p-2 bg-gray-50 rounded-lg">
-                  <p className="text-sm">{c}</p>
+                  <p className="text-sm">{c.content}</p>
                 </div>
               ))}
             </div>
@@ -201,18 +209,13 @@ export function Post({ username, userAvatar, content, description, businessDetai
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold">Invest in {businessDetails.title}</h3>
-                <button 
-                  onClick={() => setShowInvestModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
+                <button onClick={() => setShowInvestModal(false)} className="text-gray-500 hover:text-gray-700">
                   <X className="w-6 h-6" />
                 </button>
               </div>
               <form onSubmit={handleInvest}>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Investment Amount (USD)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Investment Amount (USD)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2 text-gray-500">$</span>
                     <input
@@ -227,9 +230,7 @@ export function Post({ username, userAvatar, content, description, businessDetai
                     />
                   </div>
                   <p className="mt-2 text-sm text-gray-600">
-                    Estimated equity: {investmentAmount ? 
-                      ((parseFloat(investmentAmount) / businessDetails.fundingGoal) * businessDetails.equityOffered).toFixed(2) 
-                      : '0'}%
+                    Estimated equity: {investmentAmount ? ((parseFloat(investmentAmount) / businessDetails.fundingGoal) * businessDetails.equityOffered).toFixed(2) : '0'}%
                   </p>
                 </div>
                 <button
@@ -249,14 +250,11 @@ export function Post({ username, userAvatar, content, description, businessDetai
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold">Support {businessDetails.title}</h3>
-                <button 
-                  onClick={() => setShowCrowdfundModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
+                <button onClick={() => setShowCrowdfundModal(false)} className="text-gray-500 hover:text-gray-700">
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              
+
               <div className="mb-6">
                 <h4 className="text-lg font-medium mb-3">Select a Reward</h4>
                 <div className="space-y-3">
@@ -268,10 +266,8 @@ export function Post({ username, userAvatar, content, description, businessDetai
                         setCrowdfundAmount(reward.amount.toString());
                       }}
                       className={cn(
-                        "w-full p-4 rounded-lg border-2 text-left transition-all",
-                        selectedReward && selectedReward.amount === reward.amount
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-blue-300"
+                        'w-full p-4 rounded-lg border-2 text-left transition-all',
+                        selectedReward && selectedReward.amount === reward.amount ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
                       )}
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -286,9 +282,7 @@ export function Post({ username, userAvatar, content, description, businessDetai
 
               <form onSubmit={handleCrowdfund}>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Custom Contribution Amount (USD)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Custom Contribution Amount (USD)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2 text-gray-500">$</span>
                     <input
@@ -323,10 +317,7 @@ export function Post({ username, userAvatar, content, description, businessDetai
             <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-semibold">Share this project</h3>
-                <button 
-                  onClick={() => setShowShareModal(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
+                <button onClick={() => setShowShareModal(false)} className="text-gray-500 hover:text-gray-700">
                   <X className="w-6 h-6" />
                 </button>
               </div>
