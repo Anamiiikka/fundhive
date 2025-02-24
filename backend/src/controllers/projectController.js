@@ -38,7 +38,7 @@ const createProject = [
         user = new User({
           auth0Id: userId,
           name: name || 'Unnamed User',
-          email: email || null, // Use email from Auth0 if provided
+          email: email || null,
           username,
         });
         await user.save();
@@ -66,6 +66,7 @@ const createProject = [
     }
   },
 ];
+
 // Get all projects with optional filtering
 const getProjects = async (req, res) => {
   try {
@@ -80,8 +81,20 @@ const getProjects = async (req, res) => {
       ];
     }
 
-    const projects = await Project.find(query).populate('userId', 'username'); // Populate username
-    res.status(200).json(projects);
+    const projects = await Project.find(query);
+    // Manually populate userId with username
+    const populatedProjects = await Promise.all(
+      projects.map(async (project) => {
+        const user = await User.findOne({ auth0Id: project.userId }).select('username');
+        return {
+          ...project.toObject(),
+          userId: user ? { username: user.username } : { username: 'Unknown User' },
+        };
+      })
+    );
+
+    console.log('Populated projects sent to frontend:', populatedProjects);
+    res.status(200).json(populatedProjects);
   } catch (error) {
     console.error('Error fetching projects:', error);
     res.status(500).json({ message: 'Server error' });
@@ -91,9 +104,17 @@ const getProjects = async (req, res) => {
 // Get a specific project by ID
 const getProjectById = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id).populate('userId', 'username');
+    const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: 'Project not found' });
-    res.status(200).json(project);
+
+    const user = await User.findOne({ auth0Id: project.userId }).select('username');
+    const populatedProject = {
+      ...project.toObject(),
+      userId: user ? { username: user.username } : { username: 'Unknown User' },
+    };
+
+    console.log('Populated project by ID:', populatedProject);
+    res.status(200).json(populatedProject);
   } catch (error) {
     console.error('Error fetching project by ID:', error);
     res.status(500).json({ message: 'Server error' });

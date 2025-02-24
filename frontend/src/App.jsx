@@ -53,17 +53,18 @@ function App() {
           'X-User-ID': user.sub,
         },
       });
-
+  
       if (!response.ok) {
         throw new Error('Failed to fetch projects');
       }
-
+  
       const projects = await response.json();
-
+      console.log('Projects from backend:', projects); // Add this for debugging
+  
       const fetchedPosts = projects.map((project) => ({
         id: project._id,
-        username: project.userId?.username || user.name, // Use populated username
-        userAvatar: project.userId === user.sub ? user.picture || 'https://via.placeholder.com/64' : 'https://via.placeholder.com/64',
+        username: project.userId?.username || 'Unknown User', // Use creator's username, fallback to 'Unknown User'
+        userAvatar: project.userId === user.sub ? user.picture || 'https://via.placeholder.com/64' : 'https://via.placeholder.com/64', // Avatar only for current user's posts
         content: {
           type: project.mediaUrl?.includes('.mp4') ? 'video' : 'image',
           url: project.mediaUrl ? `http://localhost:5000${project.mediaUrl}` : 'https://via.placeholder.com/400',
@@ -82,7 +83,7 @@ function App() {
         duration: project.duration,
       }));
       setPosts(fetchedPosts);
-
+  
       const trending = projects
         .map((project) => ({
           id: project._id,
