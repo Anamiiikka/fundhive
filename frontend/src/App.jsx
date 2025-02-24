@@ -59,12 +59,12 @@ function App() {
       }
   
       const projects = await response.json();
-      console.log('Projects from backend:', projects); // Add this for debugging
+      console.log('Projects from backend:', projects); // Debug: Check response
   
       const fetchedPosts = projects.map((project) => ({
         id: project._id,
-        username: project.userId?.username || 'Unknown User', // Use creator's username, fallback to 'Unknown User'
-        userAvatar: project.userId === user.sub ? user.picture || 'https://via.placeholder.com/64' : 'https://via.placeholder.com/64', // Avatar only for current user's posts
+        username: project.userId?.username || 'Unknown User',
+        userAvatar: project.userId?.avatarUrl || 'https://via.placeholder.com/64', // Use avatarUrl from backend
         content: {
           type: project.mediaUrl?.includes('.mp4') ? 'video' : 'image',
           url: project.mediaUrl ? `http://localhost:5000${project.mediaUrl}` : 'https://via.placeholder.com/400',
@@ -104,7 +104,6 @@ function App() {
       setLoadingPosts(false);
     }
   };
-
   const handleLike = async (postId) => {
     try {
       const post = posts.find((p) => p.id === postId);

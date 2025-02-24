@@ -28,6 +28,8 @@ export function CreateProject({ onClose }) {
     setLoading(true);
     setError(null);
 
+
+    console.log('User picture being sent:', user.picture); // Debug
     const formDataToSend = new FormData();
     formDataToSend.append('title', formData.title);
     formDataToSend.append('description', formData.description);
@@ -44,15 +46,18 @@ export function CreateProject({ onClose }) {
     try {
       const response = await fetch('http://localhost:5000/api/projects', {
         method: 'POST',
-        headers: { 'X-User-ID': user.sub },
+        headers: {
+          'X-User-ID': user.sub,
+          'X-User-Picture': user.picture || '', // Send Auth0 picture
+        },
         body: formDataToSend,
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to create project');
       }
-
+  
       const result = await response.json();
       console.log('Project created:', result);
       onClose();
@@ -62,8 +67,7 @@ export function CreateProject({ onClose }) {
     } finally {
       setLoading(false);
     }
-  };
-
+  }
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg w-full max-w-2xl mx-4">

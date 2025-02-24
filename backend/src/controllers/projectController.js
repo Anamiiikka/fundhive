@@ -20,6 +20,7 @@ const createProject = [
     try {
       const { title, description, category, fundingGoal, equityOffered, duration, name, email } = req.body;
       const userId = req.headers['x-user-id'];
+      const userPicture = req.headers['x-user-picture']; // Ensure this matches what frontend sends
 
       if (!userId) return res.status(401).json({ message: 'User ID required' });
       if (!title || !description || !category || !fundingGoal || !equityOffered || !duration) {
@@ -39,8 +40,13 @@ const createProject = [
           auth0Id: userId,
           name: name || 'Unnamed User',
           email: email || null,
+          avatarUrl: userPicture || 'https://via.placeholder.com/64', // Use Auth0 picture or fallback
           username,
         });
+        await user.save();
+      } else if (!user.avatarUrl && userPicture) {
+        // Update existing user with avatar if missing
+        user.avatarUrl = userPicture;
         await user.save();
       }
 
@@ -82,13 +88,12 @@ const getProjects = async (req, res) => {
     }
 
     const projects = await Project.find(query);
-    // Manually populate userId with username
     const populatedProjects = await Promise.all(
       projects.map(async (project) => {
-        const user = await User.findOne({ auth0Id: project.userId }).select('username');
+        const user = await User.findOne({ auth0Id: project.userId }).select('username avatarUrl');
         return {
           ...project.toObject(),
-          userId: user ? { username: user.username } : { username: 'Unknown User' },
+          userId: user ? { username: user.username, avatarUrl: user.avatarUrl } : { username: 'Unknown User', avatarUrl: 'https://via.placeholder.com/64' },
         };
       })
     );
@@ -107,10 +112,10 @@ const getProjectById = async (req, res) => {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
-    const user = await User.findOne({ auth0Id: project.userId }).select('username');
+    const user = await User.findOne({ auth0Id: project.userId }).select('username avatarUrl');
     const populatedProject = {
       ...project.toObject(),
-      userId: user ? { username: user.username } : { username: 'Unknown User' },
+      userId: user ? { username: user.username, avatarUrl: user.avatarUrl } : { username: 'Unknown User', avatarUrl: 'https://via.placeholder.com/64' },
     };
 
     console.log('Populated project by ID:', populatedProject);
@@ -120,7 +125,6 @@ const getProjectById = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
 // Like or unlike a project
 const likeProject = async (req, res) => {
   try {
