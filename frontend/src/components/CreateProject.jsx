@@ -3,7 +3,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { X, Upload, AlertCircle } from 'lucide-react';
 
 export function CreateProject({ onClose }) {
-  const { user } = useAuth0(); // Get the authenticated user
+  const { user } = useAuth0();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     title: '',
@@ -14,8 +14,8 @@ export function CreateProject({ onClose }) {
     duration: '30',
     media: null,
   });
-  const [error, setError] = useState(null); // For error messages
-  const [loading, setLoading] = useState(false); // For loading state
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -28,7 +28,6 @@ export function CreateProject({ onClose }) {
     setLoading(true);
     setError(null);
 
-    // Prepare form data for multipart/form-data (for file upload)
     const formDataToSend = new FormData();
     formDataToSend.append('title', formData.title);
     formDataToSend.append('description', formData.description);
@@ -36,6 +35,7 @@ export function CreateProject({ onClose }) {
     formDataToSend.append('fundingGoal', formData.fundingGoal);
     formDataToSend.append('equityOffered', formData.equityOffered);
     formDataToSend.append('duration', formData.duration);
+    formDataToSend.append('name', user.name); // Send Auth0 user.name
     if (formData.media) {
       formDataToSend.append('media', formData.media);
     }
@@ -43,9 +43,7 @@ export function CreateProject({ onClose }) {
     try {
       const response = await fetch('http://localhost:5000/api/projects', {
         method: 'POST',
-        headers: {
-          'X-User-ID': user.sub, // Send Auth0 user ID
-        },
+        headers: { 'X-User-ID': user.sub },
         body: formDataToSend,
       });
 
@@ -56,7 +54,7 @@ export function CreateProject({ onClose }) {
 
       const result = await response.json();
       console.log('Project created:', result);
-      onClose(); // Close modal on success
+      onClose();
     } catch (err) {
       setError(err.message);
       console.error('Error creating project:', err);
@@ -110,9 +108,7 @@ export function CreateProject({ onClose }) {
             {step === 1 && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Project Title
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Project Title</label>
                   <input
                     type="text"
                     value={formData.title}
@@ -124,9 +120,7 @@ export function CreateProject({ onClose }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -137,9 +131,7 @@ export function CreateProject({ onClose }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -161,9 +153,7 @@ export function CreateProject({ onClose }) {
             {step === 2 && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Funding Goal (USD)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Funding Goal (USD)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-2 text-gray-500">$</span>
                     <input
@@ -179,9 +169,7 @@ export function CreateProject({ onClose }) {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Equity Offered (%)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Equity Offered (%)</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -199,9 +187,7 @@ export function CreateProject({ onClose }) {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Campaign Duration (Days)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Campaign Duration (Days)</label>
                   <select
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
@@ -220,9 +206,7 @@ export function CreateProject({ onClose }) {
             {step === 3 && (
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Project Media
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Project Media</label>
                   <div className="border-2 border-dashed rounded-lg p-8 text-center">
                     <input
                       type="file"
@@ -237,17 +221,11 @@ export function CreateProject({ onClose }) {
                       className={`cursor-pointer flex flex-col items-center ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <Upload className="w-12 h-12 text-gray-400 mb-4" />
-                      <span className="text-sm text-gray-600">
-                        Click to upload image or video
-                      </span>
-                      <span className="text-xs text-gray-500 mt-2">
-                        Max file size: 50MB
-                      </span>
+                      <span className="text-sm text-gray-600">Click to upload image or video</span>
+                      <span className="text-xs text-gray-500 mt-2">Max file size: 50MB</span>
                     </label>
                     {formData.media && (
-                      <div className="mt-4 text-sm text-gray-600">
-                        Selected: {formData.media.name}
-                      </div>
+                      <div className="mt-4 text-sm text-gray-600">Selected: {formData.media.name}</div>
                     )}
                   </div>
                 </div>
@@ -273,9 +251,7 @@ export function CreateProject({ onClose }) {
             <button
               onClick={() => setStep(step - 1)}
               className={`px-6 py-2 rounded-lg ${
-                step === 1
-                  ? 'invisible'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                step === 1 ? 'invisible' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={loading}
             >

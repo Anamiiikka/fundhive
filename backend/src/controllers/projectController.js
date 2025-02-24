@@ -21,17 +21,29 @@ const createProject = [
       console.log('Request body:', req.body);
       console.log('Uploaded file:', req.file);
 
-      const { title, description, category, fundingGoal, equityOffered, duration } = req.body;
+      const { title, description, category, fundingGoal, equityOffered, duration, name } = req.body;
       const userId = req.headers['x-user-id'];
 
       if (!userId) return res.status(401).json({ message: 'User ID required' });
-      if (!title || !description || !category || !fundingGoal || !equityOffered || !duration) {
-        return res.status(400).json({ message: 'All fields are required' });
+      if (!title || !description || !category || !fundingGoal || !equityOffered || !duration || !name) {
+        return res.status(400).json({ message: 'All fields, including name, are required' });
       }
 
       let user = await User.findOne({ auth0Id: userId });
       if (!user) {
-        user = new User({ auth0Id: userId });
+        // Generate a unique username based on name
+        const baseUsername = name.replace(/\s+/g, '').toLowerCase();
+        let username = baseUsername;
+        let counter = 1;
+        while (await User.findOne({ username })) {
+          username = `${baseUsername}${counter++}`; // Append number if duplicate
+        }
+
+        user = new User({
+          auth0Id: userId,
+          name,
+          username,
+        });
         await user.save();
       }
 
@@ -46,7 +58,7 @@ const createProject = [
         equityOffered: Number(equityOffered),
         duration: Number(duration),
         mediaUrl,
-        startDate: new Date(), // Set startDate for accurate time tracking
+        startDate: new Date(),
       });
 
       await project.save();
@@ -72,7 +84,7 @@ const getProjects = async (req, res) => {
       ];
     }
 
-    const projects = await Project.find(query);
+    const projects = await Project.find(query).populate('userId', 'username'); // Populate username
     res.status(200).json(projects);
   } catch (error) {
     console.error('Error fetching projects:', error);
@@ -83,7 +95,7 @@ const getProjects = async (req, res) => {
 // Get a specific project by ID
 const getProjectById = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id);
+    const project = await Project.findById(req.params.id).populate('userId', 'username');
     if (!project) return res.status(404).json({ message: 'Project not found' });
     res.status(200).json(project);
   } catch (error) {
@@ -103,9 +115,9 @@ const likeProject = async (req, res) => {
 
     const alreadyLiked = project.likes.includes(userId);
     if (alreadyLiked) {
-      project.likes = project.likes.filter((id) => id !== userId); // Unlike
+      project.likes = project.likes.filter((id) => id !== userId);
     } else {
-      project.likes.push(userId); // Like
+      project.likes.push(userId);
     }
 
     await project.save();

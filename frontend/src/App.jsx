@@ -62,7 +62,7 @@ function App() {
 
       const fetchedPosts = projects.map((project) => ({
         id: project._id,
-        username: project.userId === user.sub ? user.name : project.userId,
+        username: project.userId.username || user.name, // Use populated username
         userAvatar: project.userId === user.sub ? user.picture || 'https://via.placeholder.com/64' : 'https://via.placeholder.com/64',
         content: {
           type: project.mediaUrl?.includes('.mp4') ? 'video' : 'image',
@@ -78,7 +78,7 @@ function App() {
         currentFunding: project.currentFunding || 0,
         likes: project.likes || [],
         comments: project.comments || [],
-        startDate: project.startDate, // Added for hoursLeft calculation
+        startDate: project.startDate,
         duration: project.duration,
       }));
       setPosts(fetchedPosts);
@@ -170,7 +170,6 @@ function App() {
 
   const handleInvest = async (postId, amount) => {
     try {
-      // Optimistic update
       setPosts((prevPosts) =>
         prevPosts.map((p) =>
           p.id === postId ? { ...p, currentFunding: p.currentFunding + amount } : p
@@ -199,15 +198,14 @@ function App() {
       console.error('Error investing:', err);
       setPosts((prevPosts) =>
         prevPosts.map((p) => (p.id === postId ? { ...p, currentFunding: p.currentFunding - amount } : p))
-      ); // Revert optimistic update
-      updateTrendingProjectsOptimistically(postId, -amount); // Revert trending
-      throw err; // Pass error to Post.jsx
+      );
+      updateTrendingProjectsOptimistically(postId, -amount);
+      throw err;
     }
   };
 
   const handleCrowdfund = async (postId, amount) => {
     try {
-      // Optimistic update
       setPosts((prevPosts) =>
         prevPosts.map((p) =>
           p.id === postId ? { ...p, currentFunding: p.currentFunding + amount } : p
@@ -236,9 +234,9 @@ function App() {
       console.error('Error crowdfunding:', err);
       setPosts((prevPosts) =>
         prevPosts.map((p) => (p.id === postId ? { ...p, currentFunding: p.currentFunding - amount } : p))
-      ); // Revert optimistic update
-      updateTrendingProjectsOptimistically(postId, -amount); // Revert trending
-      throw err; // Pass error to Post.jsx
+      );
+      updateTrendingProjectsOptimistically(postId, -amount);
+      throw err;
     }
   };
 
