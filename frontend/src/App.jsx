@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router-dom';
 import { Post } from './components/Post';
@@ -8,7 +8,7 @@ import { Notifications } from './components/Notifications';
 import { Rocket, Search, TrendingUp, Briefcase, Code, Leaf, Cpu, Palette, Bell, UserCircle, Plus } from 'lucide-react';
 
 function App() {
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { user, isAuthenticated, isLoading } = useAuth0();
   const navigate = useNavigate();
 
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -32,6 +32,77 @@ function App() {
       read: false,
     },
   ]);
+  const [posts, setPosts] = useState([]);
+  const [trendingProjects, setTrendingProjects] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch projects when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchProjects();
+    }
+  }, [isAuthenticated]);
+
+  const fetchProjects = async () => {
+    setLoadingPosts(true);
+    setError(null);
+    try {
+      const response = await fetch('http://localhost:5000/api/projects', {
+        headers: {
+          'X-User-ID': user.sub, // Send Auth0 user ID
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch projects');
+      }
+
+      const projects = await response.json();
+
+      // Transform projects into posts format
+      const fetchedPosts = projects.map((project) => ({
+        username: project.userId, // Ideally, fetch username from User model
+        userAvatar: 'https://via.placeholder.com/64', // Fetch from User model later
+        content: {
+          type: project.mediaUrl?.includes('.mp4') ? 'video' : 'image',
+          url: project.mediaUrl || 'https://via.placeholder.com/400',
+        },
+        description: project.description,
+        businessDetails: {
+          title: project.title,
+          fundingGoal: project.fundingGoal,
+          equityOffered: project.equityOffered,
+        },
+        category: project.category,
+        currentFunding: project.currentFunding || 0, // Add if needed in Post.jsx
+      }));
+      setPosts(fetchedPosts);
+
+      // Calculate trending projects (e.g., top 3 by funding percentage)
+      const trending = projects
+        .map((project) => ({
+          id: project._id,
+          title: project.title,
+          fundingPercentage: Math.min((project.currentFunding / project.fundingGoal) * 100, 100),
+          hoursLeft: Math.floor((new Date().setDate(new Date().getDate() + project.duration) - Date.now()) / (1000 * 60 * 60)), // Rough estimate
+        }))
+        .sort((a, b) => b.fundingPercentage - a.fundingPercentage)
+        .slice(0, 3);
+      setTrendingProjects(trending);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching projects:', err);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  // Handle project creation to refresh posts
+  const handleProjectCreated = () => {
+    setShowCreateProject(false);
+    fetchProjects(); // Refresh posts after creating a new project
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -50,49 +121,6 @@ function App() {
     { id: 'creative', name: 'Creative', icon: <Palette className="w-5 h-5" /> },
   ];
 
-  const trendingProjects = [
-    { id: '1', title: 'EcoCharge - Solar Power Bank', fundingPercentage: 85, hoursLeft: 48 },
-    { id: '2', title: 'SmartLearn AI Tutor', fundingPercentage: 92, hoursLeft: 24 },
-    { id: '3', title: 'Urban Vertical Farm', fundingPercentage: 75, hoursLeft: 72 },
-  ];
-
-  const posts = [
-    {
-      username: 'TechStartup',
-      userAvatar:
-        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-      content: {
-        type: 'image',
-        url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1600&q=80',
-      },
-      description:
-        'Introducing our revolutionary AI-powered productivity platform that helps teams collaborate more effectively. Looking for seed funding to scale our operations.',
-      businessDetails: {
-        title: 'AI Workspace Pro',
-        fundingGoal: 500000,
-        equityOffered: 10,
-      },
-      category: 'tech',
-    },
-    {
-      username: 'GreenEnergy',
-      userAvatar:
-        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-      content: {
-        type: 'image',
-        url: 'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1600&q=80',
-      },
-      description:
-        'Our innovative solar panel technology increases energy efficiency by 40%. Join us in revolutionizing renewable energy.',
-      businessDetails: {
-        title: 'SolarTech Solutions',
-        fundingGoal: 1000000,
-        equityOffered: 15,
-      },
-      category: 'sustainability',
-    },
-  ];
-
   const filteredPosts = posts.filter((post) => {
     const matchesCategory = !selectedCategory || post.category === selectedCategory;
     const matchesSearch =
@@ -102,7 +130,6 @@ function App() {
     return matchesCategory && matchesSearch;
   });
 
-  // Define unreadNotifications here
   const unreadNotifications = notifications.filter((n) => !n.read).length;
 
   return (
@@ -192,49 +219,67 @@ function App() {
         </div>
       </div>
 
-      {/* Trending Section */}
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {error && (
+          <div className="mb-8 p-4 bg-red-100 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        {/* Trending Section */}
         <div className="bg-white rounded-xl shadow-md p-6 mb-8">
           <div className="flex items-center space-x-2 mb-4">
             <TrendingUp className="w-6 h-6 text-blue-600" />
             <h2 className="text-xl font-semibold">Trending Projects</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {trendingProjects.map((project) => (
-              <div
-                key={project.id}
-                className="p-4 border rounded-lg hover:shadow-md transition-shadow"
-              >
-                <h3 className="font-medium mb-2">{project.title}</h3>
-                <div className="space-y-2">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full"
-                      style={{ width: `${project.fundingPercentage}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-600">
-                    <span>{project.fundingPercentage}% funded</span>
-                    <span>{project.hoursLeft}h left</span>
+          {loadingPosts ? (
+            <div>Loading trending projects...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {trendingProjects.map((project) => (
+                <div
+                  key={project.id}
+                  className="p-4 border rounded-lg hover:shadow-md transition-shadow"
+                >
+                  <h3 className="font-medium mb-2">{project.title}</h3>
+                  <div className="space-y-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${project.fundingPercentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>{project.fundingPercentage.toFixed(1)}% funded</span>
+                      <span>{project.hoursLeft}h left</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Posts */}
         <div className="space-y-8">
-          {filteredPosts.map((post, index) => (
-            <Post key={index} {...post} />
-          ))}
+          {loadingPosts ? (
+            <div>Loading posts...</div>
+          ) : filteredPosts.length === 0 ? (
+            <div>No projects found.</div>
+          ) : (
+            filteredPosts.map((post, index) => (
+              <Post key={index} {...post} />
+            ))
+          )}
         </div>
       </div>
 
       {/* Modals */}
       {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
-
-      {showCreateProject && <CreateProject onClose={() => setShowCreateProject(false)} />}
+      {showCreateProject && (
+        <CreateProject onClose={handleProjectCreated} />
+      )}
     </div>
   );
 }

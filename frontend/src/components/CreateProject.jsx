@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import { X, Upload, AlertCircle } from 'lucide-react';
 
 export function CreateProject({ onClose }) {
+  const { user } = useAuth0(); // Get the authenticated user
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     title: '',
@@ -10,8 +12,10 @@ export function CreateProject({ onClose }) {
     fundingGoal: '',
     equityOffered: '',
     duration: '30',
-    media: null
+    media: null,
   });
+  const [error, setError] = useState(null); // For error messages
+  const [loading, setLoading] = useState(false); // For loading state
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -19,10 +23,46 @@ export function CreateProject({ onClose }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Project data:', formData);
-    onClose();
+    setLoading(true);
+    setError(null);
+
+    // Prepare form data for multipart/form-data (for file upload)
+    const formDataToSend = new FormData();
+    formDataToSend.append('title', formData.title);
+    formDataToSend.append('description', formData.description);
+    formDataToSend.append('category', formData.category);
+    formDataToSend.append('fundingGoal', formData.fundingGoal);
+    formDataToSend.append('equityOffered', formData.equityOffered);
+    formDataToSend.append('duration', formData.duration);
+    if (formData.media) {
+      formDataToSend.append('media', formData.media);
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/projects', {
+        method: 'POST',
+        headers: {
+          'X-User-ID': user.sub, // Send Auth0 user ID
+        },
+        body: formDataToSend,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create project');
+      }
+
+      const result = await response.json();
+      console.log('Project created:', result);
+      onClose(); // Close modal on success
+    } catch (err) {
+      setError(err.message);
+      console.error('Error creating project:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,6 +99,13 @@ export function CreateProject({ onClose }) {
             </div>
           </div>
 
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg flex items-center">
+              <AlertCircle className="w-5 h-5 mr-2" />
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
             {step === 1 && (
               <div className="space-y-6">
@@ -73,6 +120,7 @@ export function CreateProject({ onClose }) {
                     className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Enter your project title"
                     required
+                    disabled={loading}
                   />
                 </div>
                 <div>
@@ -85,6 +133,7 @@ export function CreateProject({ onClose }) {
                     className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-32"
                     placeholder="Describe your project"
                     required
+                    disabled={loading}
                   />
                 </div>
                 <div>
@@ -96,6 +145,7 @@ export function CreateProject({ onClose }) {
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
+                    disabled={loading}
                   >
                     <option value="">Select a category</option>
                     <option value="tech">Technology</option>
@@ -124,6 +174,7 @@ export function CreateProject({ onClose }) {
                       placeholder="Enter funding goal"
                       min="1000"
                       required
+                      disabled={loading}
                     />
                   </div>
                 </div>
@@ -142,6 +193,7 @@ export function CreateProject({ onClose }) {
                       max="100"
                       step="0.1"
                       required
+                      disabled={loading}
                     />
                     <span className="absolute right-3 top-2 text-gray-500">%</span>
                   </div>
@@ -155,6 +207,7 @@ export function CreateProject({ onClose }) {
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
+                    disabled={loading}
                   >
                     <option value="30">30 days</option>
                     <option value="60">60 days</option>
@@ -177,10 +230,11 @@ export function CreateProject({ onClose }) {
                       className="hidden"
                       id="media-upload"
                       accept="image/*,video/*"
+                      disabled={loading}
                     />
                     <label
                       htmlFor="media-upload"
-                      className="cursor-pointer flex flex-col items-center"
+                      className={`cursor-pointer flex flex-col items-center ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <Upload className="w-12 h-12 text-gray-400 mb-4" />
                       <span className="text-sm text-gray-600">
@@ -222,22 +276,24 @@ export function CreateProject({ onClose }) {
                 step === 1
                   ? 'invisible'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={loading}
             >
               Back
             </button>
             {step === 3 ? (
               <button
-                type="submit"
                 onClick={handleSubmit}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={loading}
               >
-                Create Project
+                {loading ? 'Creating...' : 'Create Project'}
               </button>
             ) : (
               <button
                 onClick={() => setStep(step + 1)}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={loading}
               >
                 Next
               </button>
