@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
+import { useNavigate } from 'react-router-dom';
 import { Post } from './components/Post';
 import { CreateProject } from './components/CreateProject';
 import { UserProfile } from './components/UserProfile';
@@ -6,6 +8,9 @@ import { Notifications } from './components/Notifications';
 import { Rocket, Search, TrendingUp, Briefcase, Code, Leaf, Cpu, Palette, Bell, UserCircle, Plus } from 'lucide-react';
 
 function App() {
+  const { isAuthenticated, isLoading } = useAuth0();
+  const navigate = useNavigate();
+
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
@@ -17,16 +22,25 @@ function App() {
       type: 'investment',
       message: 'New $5,000 investment in AI Workspace Pro!',
       timestamp: new Date(),
-      read: false
+      read: false,
     },
     {
       id: '2',
       type: 'milestone',
       message: 'SolarTech Solutions reached 75% of funding goal!',
       timestamp: new Date(Date.now() - 3600000),
-      read: false
-    }
+      read: false,
+    },
   ]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    navigate('/login');
+    return null;
+  }
 
   const categories = [
     { id: 'tech', name: 'Technology', icon: <Cpu className="w-5 h-5" /> },
@@ -44,46 +58,52 @@ function App() {
 
   const posts = [
     {
-      username: "TechStartup",
-      userAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+      username: 'TechStartup',
+      userAvatar:
+        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
       content: {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1600&q=80"
+        type: 'image',
+        url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1600&q=80',
       },
-      description: "Introducing our revolutionary AI-powered productivity platform that helps teams collaborate more effectively. Looking for seed funding to scale our operations.",
+      description:
+        'Introducing our revolutionary AI-powered productivity platform that helps teams collaborate more effectively. Looking for seed funding to scale our operations.',
       businessDetails: {
-        title: "AI Workspace Pro",
+        title: 'AI Workspace Pro',
         fundingGoal: 500000,
-        equityOffered: 10
+        equityOffered: 10,
       },
-      category: 'tech'
+      category: 'tech',
     },
     {
-      username: "GreenEnergy",
-      userAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+      username: 'GreenEnergy',
+      userAvatar:
+        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
       content: {
-        type: "image",
-        url: "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1600&q=80"
+        type: 'image',
+        url: 'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1600&q=80',
       },
-      description: "Our innovative solar panel technology increases energy efficiency by 40%. Join us in revolutionizing renewable energy.",
+      description:
+        'Our innovative solar panel technology increases energy efficiency by 40%. Join us in revolutionizing renewable energy.',
       businessDetails: {
-        title: "SolarTech Solutions",
+        title: 'SolarTech Solutions',
         fundingGoal: 1000000,
-        equityOffered: 15
+        equityOffered: 15,
       },
-      category: 'sustainability'
-    }
+      category: 'sustainability',
+    },
   ];
 
-  const filteredPosts = posts.filter(post => {
+  const filteredPosts = posts.filter((post) => {
     const matchesCategory = !selectedCategory || post.category === selectedCategory;
-    const matchesSearch = !searchQuery || 
+    const matchesSearch =
+      !searchQuery ||
       post.businessDetails.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  const unreadNotifications = notifications.filter(n => !n.read).length;
+  // Define unreadNotifications here
+  const unreadNotifications = notifications.filter((n) => !n.read).length;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -96,7 +116,7 @@ function App() {
               <h1 className="text-2xl font-bold text-gray-900">FundHive</h1>
             </div>
             <nav className="flex items-center space-x-4">
-              <button 
+              <button
                 onClick={() => setShowCreateProject(true)}
                 className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
               >
@@ -104,7 +124,7 @@ function App() {
                 <span>Create Project</span>
               </button>
               <div className="relative">
-                <button 
+                <button
                   onClick={() => setShowNotifications(!showNotifications)}
                   className="text-gray-600 hover:text-gray-900 relative"
                 >
@@ -116,18 +136,18 @@ function App() {
                   )}
                 </button>
                 {showNotifications && (
-                  <Notifications 
-                    notifications={notifications} 
+                  <Notifications
+                    notifications={notifications}
                     onClose={() => setShowNotifications(false)}
                     onMarkAsRead={(id) => {
-                      setNotifications(notifications.map(n => 
-                        n.id === id ? { ...n, read: true } : n
-                      ));
+                      setNotifications(
+                        notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
+                      );
                     }}
                   />
                 )}
               </div>
-              <button 
+              <button
                 onClick={() => setShowProfile(!showProfile)}
                 className="text-gray-600 hover:text-gray-900"
               >
@@ -135,7 +155,7 @@ function App() {
               </button>
             </nav>
           </div>
-          
+
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -157,11 +177,11 @@ function App() {
             {categories.map((category) => (
               <button
                 key={category.id}
-                onClick={() => setSelectedCategory(selectedCategory === category.id ? null : category.id)}
+                onClick={() =>
+                  setSelectedCategory(selectedCategory === category.id ? null : category.id)
+                }
                 className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${
-                  selectedCategory === category.id
-                    ? 'bg-blue-100 text-blue-600'
-                    : 'hover:bg-gray-100'
+                  selectedCategory === category.id ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-100'
                 }`}
               >
                 {category.icon}
@@ -181,7 +201,10 @@ function App() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {trendingProjects.map((project) => (
-              <div key={project.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+              <div
+                key={project.id}
+                className="p-4 border rounded-lg hover:shadow-md transition-shadow"
+              >
                 <h3 className="font-medium mb-2">{project.title}</h3>
                 <div className="space-y-2">
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -209,13 +232,9 @@ function App() {
       </div>
 
       {/* Modals */}
-      {showProfile && (
-        <UserProfile onClose={() => setShowProfile(false)} />
-      )}
+      {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
 
-      {showCreateProject && (
-        <CreateProject onClose={() => setShowCreateProject(false)} />
-      )}
+      {showCreateProject && <CreateProject onClose={() => setShowCreateProject(false)} />}
     </div>
   );
 }

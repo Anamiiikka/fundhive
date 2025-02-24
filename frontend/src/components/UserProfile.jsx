@@ -1,35 +1,25 @@
 import React, { useState } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import { X, User, Briefcase, ChevronRight, Settings, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export function UserProfile({ onClose }) {
+  const { user, logout } = useAuth0();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('investments');
 
   const investments = [
-    { 
-      id: '1',
-      projectName: 'AI Workspace Pro',
-      amount: 5000,
-      equity: 0.5,
-      date: '2024-03-15'
-    },
-    {
-      id: '2',
-      projectName: 'SolarTech Solutions',
-      amount: 10000,
-      equity: 1.2,
-      date: '2024-03-10'
-    }
+    { id: '1', projectName: 'AI Workspace Pro', amount: 5000, equity: 0.5, date: '2024-03-15' },
+    { id: '2', projectName: 'SolarTech Solutions', amount: 10000, equity: 1.2, date: '2024-03-10' },
   ];
 
   const projects = [
-    {
-      id: '1',
-      name: 'EcoFriendly Packaging',
-      status: 'active',
-      raised: 75000,
-      goal: 100000
-    }
+    { id: '1', name: 'EcoFriendly Packaging', status: 'active', raised: 75000, goal: 100000 },
   ];
+
+  const handleLogout = () => {
+    logout({ logoutParams: { returnTo: window.location.origin + '/login' } });
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-end z-50">
@@ -43,12 +33,14 @@ export function UserProfile({ onClose }) {
           </div>
           
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-              <User className="w-8 h-8 text-gray-500" />
-            </div>
+            <img
+              src={user?.picture || 'https://via.placeholder.com/64'}
+              alt="Profile"
+              className="w-16 h-16 rounded-full object-cover"
+            />
             <div>
-              <h3 className="font-semibold">John Doe</h3>
-              <p className="text-sm text-gray-600">john.doe@example.com</p>
+              <h3 className="font-semibold">{user?.name || 'User'}</h3>
+              <p className="text-sm text-gray-600">{user?.email || 'email@example.com'}</p>
             </div>
           </div>
         </div>
@@ -139,7 +131,10 @@ export function UserProfile({ onClose }) {
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
-            <button className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 rounded-lg text-red-600">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 rounded-lg text-red-600"
+            >
               <div className="flex items-center space-x-3">
                 <LogOut className="w-5 h-5" />
                 <span>Log out</span>
