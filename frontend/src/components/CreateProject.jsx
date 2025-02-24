@@ -36,6 +36,7 @@ export function CreateProject({ onClose }) {
     formDataToSend.append('equityOffered', formData.equityOffered);
     formDataToSend.append('duration', formData.duration);
     formDataToSend.append('name', user.name); // Send Auth0 user.name
+    formDataToSend.append('email', user.email); // Add this
     if (formData.media) {
       formDataToSend.append('media', formData.media);
     }

@@ -62,7 +62,7 @@ function App() {
 
       const fetchedPosts = projects.map((project) => ({
         id: project._id,
-        username: project.userId.username || user.name, // Use populated username
+        username: project.userId?.username || user.name, // Use populated username
         userAvatar: project.userId === user.sub ? user.picture || 'https://via.placeholder.com/64' : 'https://via.placeholder.com/64',
         content: {
           type: project.mediaUrl?.includes('.mp4') ? 'video' : 'image',

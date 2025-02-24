@@ -18,30 +18,27 @@ const createProject = [
   upload.single('media'),
   async (req, res) => {
     try {
-      console.log('Request body:', req.body);
-      console.log('Uploaded file:', req.file);
-
-      const { title, description, category, fundingGoal, equityOffered, duration, name } = req.body;
+      const { title, description, category, fundingGoal, equityOffered, duration, name, email } = req.body;
       const userId = req.headers['x-user-id'];
 
       if (!userId) return res.status(401).json({ message: 'User ID required' });
-      if (!title || !description || !category || !fundingGoal || !equityOffered || !duration || !name) {
-        return res.status(400).json({ message: 'All fields, including name, are required' });
+      if (!title || !description || !category || !fundingGoal || !equityOffered || !duration) {
+        return res.status(400).json({ message: 'All project fields are required' });
       }
 
       let user = await User.findOne({ auth0Id: userId });
       if (!user) {
-        // Generate a unique username based on name
-        const baseUsername = name.replace(/\s+/g, '').toLowerCase();
+        const baseUsername = (name || 'user').replace(/\s+/g, '').toLowerCase();
         let username = baseUsername;
         let counter = 1;
         while (await User.findOne({ username })) {
-          username = `${baseUsername}${counter++}`; // Append number if duplicate
+          username = `${baseUsername}${counter++}`;
         }
 
         user = new User({
           auth0Id: userId,
-          name,
+          name: name || 'Unnamed User',
+          email: email || null, // Use email from Auth0 if provided
           username,
         });
         await user.save();
@@ -64,12 +61,11 @@ const createProject = [
       await project.save();
       res.status(201).json({ message: 'Project created', project });
     } catch (error) {
-      console.error('Error creating project:', error);
+      console.error('Error creating project:', error.stack);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
 ];
-
 // Get all projects with optional filtering
 const getProjects = async (req, res) => {
   try {
