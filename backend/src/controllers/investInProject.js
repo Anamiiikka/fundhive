@@ -9,8 +9,8 @@ async function investInProject(req, res) {
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
     const investmentAmount = Number(amount);
-    if (isNaN(investmentAmount) || investmentAmount < 1000) {
-      return res.status(400).json({ message: 'Investment amount must be at least $1,000' });
+    if (isNaN(investmentAmount) || investmentAmount < 10) { // Changed from 1000 to 10
+      return res.status(400).json({ message: 'Investment amount must be at least $10' });
     }
 
     project.currentFunding = (project.currentFunding || 0) + investmentAmount;

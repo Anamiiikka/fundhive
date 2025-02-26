@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { X } from 'lucide-react';
 
@@ -20,12 +21,12 @@ function InvestModal({ showInvestModal, setShowInvestModal, businessDetails, inv
               <span className="absolute left-3 top-2 text-gray-500">$</span>
               <input
                 type="number"
-                min="1000"
-                step="100"
+                min="10" // Changed from 1000 to 10
+                step="10" // Adjusted step for smaller increments
                 value={investmentAmount}
                 onChange={(e) => setInvestmentAmount(e.target.value)}
                 className="pl-8 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Minimum $1,000"
+                placeholder="Minimum $10" // Updated placeholder
                 required
               />
             </div>
