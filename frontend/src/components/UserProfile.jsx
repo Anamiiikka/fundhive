@@ -10,41 +10,41 @@ export function UserProfile({ onClose }) {
   const [projects, setProjects] = useState([]);
   const [negotiationRequests, setNegotiationRequests] = useState([]);
 
-  // Fetch user projects and their negotiation requests on mountuseEffect(() => {
-    useEffect(() => {
-      const fetchUserProjects = async () => {
-        try {
-          console.log('Logged-in user.sub:', user.sub);
-          const response = await fetch('http://localhost:5000/api/projects', {
-            headers: { 'X-User-ID': user.sub },
-          });
-          if (!response.ok) throw new Error('Failed to fetch projects');
-          const data = await response.json();
-          console.log('Fetched projects:', data.map(project => ({ _id: project._id, userId: project.userId })));
+  // Fetch user projects and their negotiation requests on mount
+  useEffect(() => {
+    const fetchUserProjects = async () => {
+      try {
+        console.log('Logged-in user.sub:', user.sub);
+        const response = await fetch('http://localhost:5000/api/projects', {
+          headers: { 'X-User-ID': user.sub },
+        });
+        if (!response.ok) throw new Error('Failed to fetch projects');
+        const data = await response.json();
+        console.log('Fetched projects:', data.map(project => ({ _id: project._id, userId: project.userId })));
+
+        // Filter projects where userId.auth0Id matches user.sub
+        const userProjects = data.filter(project => project.userId && project.userId.auth0Id === user.sub);
+        console.log('User projects:', userProjects);
+
+        const requests = userProjects.flatMap(project => 
+          project.negotiationRequests.map(req => ({
+            ...req,
+            projectId: project._id,
+            projectTitle: project.title,
+          }))
+        ).filter(req => req.status === 'pending');
+        console.log('Pending negotiation requests:', requests);
+
+        setProjects(userProjects);
+        setNegotiationRequests(requests);
+      } catch (err) {
+        console.error('Error fetching projects:', err);
+      }
+    };
     
-          // Filter projects where userId.auth0Id matches user.sub
-          const userProjects = data.filter(project => project.userId && project.userId.auth0Id === user.sub);
-          console.log('User projects:', userProjects);
-    
-          const requests = userProjects.flatMap(project => 
-            project.negotiationRequests.map(req => ({
-              ...req,
-              projectId: project._id,
-              projectTitle: project.title,
-            }))
-          ).filter(req => req.status === 'pending');
-          console.log('Pending negotiation requests:', requests);
-    
-          setProjects(userProjects);
-          setNegotiationRequests(requests);
-        } catch (err) {
-          console.error('Error fetching projects:', err);
-        }
-      };
-      
-      fetchUserProjects();
-    }, [user.sub]); // Dependency array here
-    
+    fetchUserProjects();
+  }, [user.sub]); // Dependency array here
+
   // Handle accept/reject actions
   const handleRespond = async (projectId, requestId, status) => {
     try {
@@ -56,19 +56,31 @@ export function UserProfile({ onClose }) {
         },
         body: JSON.stringify({ status }),
       });
-      if (!response.ok) throw new Error('Failed to respond to negotiation');
-      setNegotiationRequests(prev => prev.filter(req => req._id !== requestId)); // Remove from UI
-      if (status === 'accepted') {
-        setProjects(prev => prev.map(p => 
-          p._id === projectId 
-            ? { ...p, currentFunding: p.currentFunding + negotiationRequests.find(r => r._id === requestId).proposedAmount }
-            : p
-        ));
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to respond to negotiation');
       }
-      alert(`Negotiation ${status} successfully!`);
+
+      const updatedProject = await response.json();
+
+      // Update local state
+      setNegotiationRequests(prev => prev.filter(req => req._id !== requestId)); // Remove from pending requests
+      if (status === 'accepted') {
+        setProjects(prev =>
+          prev.map(p =>
+            p._id === projectId
+              ? { ...p, currentFunding: updatedProject.project.currentFunding } // Update funding with server response
+              : p
+          )
+        );
+        alert('Negotiation accepted successfully! Funds have been added to the project.');
+      } else {
+        alert('Negotiation rejected successfully.');
+      }
     } catch (err) {
       console.error('Error responding to negotiation:', err);
-      alert('Failed to respond to negotiation');
+      alert(`Failed to ${status} negotiation: ${err.message}`);
     }
   };
 
