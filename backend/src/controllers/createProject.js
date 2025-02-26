@@ -9,6 +9,7 @@ const createProject = [
       const { title, description, category, fundingGoal, equityOffered, duration, name, email } = req.body;
       const userId = req.headers['x-user-id'];
       const userPicture = req.headers['x-user-picture'];
+      console.log('Creating project with userId:', userId);
 
       if (!userId) return res.status(401).json({ message: 'User ID required' });
       if (!title || !description || !category || !fundingGoal || !equityOffered || !duration) {

@@ -113,5 +113,11 @@ export function usePost({ id, likes, comments, onLike, onComment, currentFunding
     handleCrowdfund,
     handleShare,
     progressPercentage,
+    businessDetails: { ...businessDetails, id }, // Ensure id is included
+    handleInvest,
+    handleCrowdfund,
+    handleShare,
+    progressPercentage,
   };
+  
 }

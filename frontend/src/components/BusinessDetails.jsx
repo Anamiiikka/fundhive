@@ -8,7 +8,7 @@ function BusinessDetails({
   setShowInvestModal,
   setShowCrowdfundModal,
   error,
-  cibilScore, // Receive as prop
+  cibilScore,
 }) {
   return (
     <div className="mt-6 bg-gray-50 p-4 rounded-lg">
@@ -28,27 +28,20 @@ function BusinessDetails({
           <p className="text-sm text-gray-600">{progressPercentage.toFixed(1)}% of goal reached</p>
         </div>
         <p className="text-sm text-gray-600">Equity Offered: {businessDetails.equityOffered}%</p>
-        {/* CIBIL Score Section */}
         <div className="mt-2">
           <p className="text-sm text-gray-600">
-            CIBIL Score:{' '}
-            <span className="font-medium">
-              {cibilScore !== null ? cibilScore : 'Calculating...'}
-            </span>{' '}
-            / 900
+            CIBIL Score: <span className="font-medium">{cibilScore !== null ? cibilScore : 'Calculating...'}</span> / 900
           </p>
           <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
             <div
-              className={`h-2 rounded-full transition-all duration-500 ${
-                cibilScore >= 750 ? 'bg-green-500' : cibilScore >= 700 ? 'bg-yellow-500' : 'bg-red-500'
-              }`}
+              className={`h-2 rounded-full transition-all duration-500 ${cibilScore >= 750 ? 'bg-green-500' : cibilScore >= 700 ? 'bg-yellow-500' : 'bg-red-500'}`}
               style={{ width: `${(cibilScore / 900) * 100}%` }}
             ></div>
           </div>
         </div>
         <div className="flex space-x-3 mt-4">
           <button
-            onClick={() => setShowInvestModal(true)}
+            onClick={() => setShowInvestModal(true)} // Opens InvestModal with both options
             className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
           >
             <DollarSign className="w-4 h-4" />
@@ -62,9 +55,7 @@ function BusinessDetails({
           </button>
         </div>
       </div>
-      {error && (
-        <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg">{error}</div>
-      )}
+      {error && <div className="mt-2 p-2 bg-red-100 text-red-700 rounded-lg">{error}</div>}
     </div>
   );
 }

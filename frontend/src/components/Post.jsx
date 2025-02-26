@@ -51,6 +51,7 @@ function Post({
     handleCrowdfund,
     handleShare,
     progressPercentage,
+    businessDetails: enhancedBusinessDetails,
   } = usePost({
     id,
     likes,
@@ -145,7 +146,7 @@ function Post({
         />
         <PostDescription description={description} />
         <BusinessDetails
-          businessDetails={businessDetails}
+          businessDetails={enhancedBusinessDetails}
           currentFunding={currentFunding}
           progressPercentage={progressPercentage}
           setShowInvestModal={setShowInvestModal}
@@ -217,7 +218,7 @@ function Post({
       <InvestModal
         showInvestModal={showInvestModal}
         setShowInvestModal={setShowInvestModal}
-        businessDetails={businessDetails}
+        businessDetails={enhancedBusinessDetails}
         investmentAmount={investmentAmount}
         setInvestmentAmount={setInvestmentAmount}
         handleInvest={handleInvest}
