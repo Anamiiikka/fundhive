@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { DollarSign } from 'lucide-react';
 
 function BusinessDetails({
@@ -8,15 +8,8 @@ function BusinessDetails({
   setShowInvestModal,
   setShowCrowdfundModal,
   error,
+  cibilScore, // Receive as prop
 }) {
-  const [cibilScore, setCibilScore] = useState(null);
-
-  // Generate a random CIBIL score between 650 and 800 when the component mounts
-  useEffect(() => {
-    const randomScore = Math.floor(Math.random() * (800 - 650 + 1)) + 650;
-    setCibilScore(randomScore);
-  }, []); // Empty dependency array ensures this runs only once on mount
-
   return (
     <div className="mt-6 bg-gray-50 p-4 rounded-lg">
       <h3 className="font-semibold text-lg">{businessDetails.title}</h3>

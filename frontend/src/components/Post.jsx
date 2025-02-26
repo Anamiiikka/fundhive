@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PostHeader from './PostHeader';
 import PostContent from './PostContent';
 import PostActions from './PostActions';
@@ -64,10 +64,20 @@ function Post({
     userSub,
   });
 
-  const [showAnalysis, setShowAnalysis] = React.useState(false);
-  const [analysisResult, setAnalysisResult] = React.useState(null);
-  const [analysisLoading, setAnalysisLoading] = React.useState(false);
-  const [analysisError, setAnalysisError] = React.useState(null);
+  const [cibilScore] = useState(() => {
+    const existingScore = localStorage.getItem(`cibilScore_${id}`);
+    if (existingScore) {
+      return parseInt(existingScore, 10);
+    }
+    const newScore = Math.floor(Math.random() * (800 - 650 + 1)) + 650;
+    localStorage.setItem(`cibilScore_${id}`, newScore);
+    return newScore;
+  });
+
+  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState(null);
 
   const fetchAIAnalysis = async () => {
     setAnalysisLoading(true);
@@ -75,7 +85,6 @@ function Post({
     setShowAnalysis(true);
 
     try {
-      const cibilScore = Math.floor(Math.random() * (800 - 650 + 1)) + 650;
       const prompt = `
         Analyze the following business idea and provide a business analysis score (0-100) and a detailed pointwise report. Structure your response as follows:
         - Business Analysis Score: [score]/100
@@ -110,7 +119,9 @@ function Post({
       if (!response.ok) throw new Error('Failed to fetch AI analysis');
 
       const result = await response.json();
-      setAnalysisResult(result);
+      // Clean up the report points by removing asterisks
+      const cleanedReport = result.report.map(point => point.replace(/\*\*/g, '').trim());
+      setAnalysisResult({ ...result, report: cleanedReport });
     } catch (err) {
       setAnalysisError(err.message);
     } finally {
@@ -140,6 +151,7 @@ function Post({
           setShowInvestModal={setShowInvestModal}
           setShowCrowdfundModal={setShowCrowdfundModal}
           error={error}
+          cibilScore={cibilScore}
         />
         <CommentsSection
           showComments={showComments}
@@ -161,10 +173,10 @@ function Post({
 
         {/* AI Analysis Result */}
         {showAnalysis && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-semibold text-lg mb-2">AI Business Analysis</h3>
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 className="font-semibold text-lg mb-3 text-gray-800">AI Business Analysis</h3>
             {analysisLoading ? (
-              <p>Loading analysis...</p>
+              <p className="text-gray-600">Loading analysis...</p>
             ) : analysisError ? (
               <div>
                 <p className="text-red-600">Error: {analysisError}</p>
@@ -179,22 +191,25 @@ function Post({
               </div>
             ) : analysisResult ? (
               <div>
-                <p className="text-lg font-medium">
+                <p className="text-lg font-medium text-gray-900 mb-2">
                   Business Analysis Score: {analysisResult.score}/100
                 </p>
                 {analysisResult.score === 0 && (
-                  <p className="text-sm text-yellow-600 mt-1">
+                  <p className="text-sm text-yellow-600 mb-2">
                     Warning: Score is 0. The AI might need more data for an accurate analysis.
                   </p>
                 )}
-                <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                <ul className="space-y-2 text-gray-700">
                   {analysisResult.report.map((point, index) => (
-                    <li key={index}>{point}</li>
+                    <li key={index} className="flex items-start">
+                      <span className="w-2 h-2 bg-purple-500 rounded-full mr-2 mt-2 flex-shrink-0"></span>
+                      <span className="text-sm">{point}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
             ) : (
-              <p>No analysis available.</p>
+              <p className="text-gray-600">No analysis available.</p>
             )}
           </div>
         )}
