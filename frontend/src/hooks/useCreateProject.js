@@ -4,7 +4,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 const API_URL = import.meta.env.VITE_API_URL;
 
 export function useCreateProject({ onClose }) {
-  const { user } = useAuth0();
+  const { user, getAccessTokenSilently } = useAuth0();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     title: '',
@@ -14,7 +14,7 @@ export function useCreateProject({ onClose }) {
     equityOffered: '',
     duration: '30',
     media: null,
-    panCard: '', // PAN card remains in formData
+    panCard: '',
   });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -31,7 +31,6 @@ export function useCreateProject({ onClose }) {
   };
 
   const handleNextStep = (nextStep) => {
-    // Validate PAN card only when moving from Step 2 to Step 3
     if (step === 2 && !formData.panCard) {
       setError('PAN Card number is required');
       return;
@@ -62,14 +61,15 @@ export function useCreateProject({ onClose }) {
     if (formData.media) {
       formDataToSend.append('media', formData.media);
     }
-    console.log('Submitting project with user.sub:', user.sub); // Debug log
 
     try {
+      const token = await getAccessTokenSilently();
       const response = await fetch(`${API_URL}/projects`, {
         method: 'POST',
         headers: {
           'X-User-ID': user.sub,
           'X-User-Picture': user.picture || '',
+          Authorization: `Bearer ${token}`,
         },
         body: formDataToSend,
       });
@@ -83,7 +83,7 @@ export function useCreateProject({ onClose }) {
       console.log('Project created:', result);
       onClose();
     } catch (err) {
-      setError(err.message);
+      setError(err.message); // This will show "Please upload your Aadhaar card..." if backend rejects
       console.error('Error creating project:', err);
     } finally {
       setLoading(false);
@@ -92,7 +92,7 @@ export function useCreateProject({ onClose }) {
 
   return {
     step,
-    setStep: handleNextStep, // Custom step handler for validation
+    setStep: handleNextStep,
     formData,
     setFormData,
     error,

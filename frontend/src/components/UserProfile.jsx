@@ -1,31 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
-import { X, User, Briefcase, ChevronRight, Settings, LogOut, Trash2 } from 'lucide-react';
+import { X, User, Briefcase, ChevronRight, Settings, LogOut, Trash2, Upload, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-export function UserProfile({ onClose, handleDeleteProject }) { // Add handleDeleteProject prop
-  const { user, logout } = useAuth0();
+export function UserProfile({ onClose, handleDeleteProject }) {
+  const { user, logout, getAccessTokenSilently } = useAuth0();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('investments');
   const [projects, setProjects] = useState([]);
   const [negotiationRequests, setNegotiationRequests] = useState([]);
+  const [aadhaarCardUrl, setAadhaarCardUrl] = useState(null);
+  const [aadhaarFile, setAadhaarFile] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
 
   useEffect(() => {
-    const fetchUserProjects = async () => {
+    const fetchUserData = async () => {
       try {
-        console.log('Logged-in user.sub:', user.sub);
+        const token = await getAccessTokenSilently();
         const response = await fetch(`${API_URL}/projects`, {
-          headers: { 'X-User-ID': user.sub },
+          headers: { 
+            'X-User-ID': user.sub,
+            Authorization: `Bearer ${token}`,
+          },
         });
         if (!response.ok) throw new Error('Failed to fetch projects');
         const data = await response.json();
-        console.log('Fetched projects:', data.map(project => ({ _id: project._id, userId: project.userId })));
 
         const userProjects = data.filter(project => project.userId && project.userId.auth0Id === user.sub);
-        console.log('User projects:', userProjects);
-
         const requests = userProjects.flatMap(project => 
           project.negotiationRequests.map(req => ({
             ...req,
@@ -33,25 +36,73 @@ export function UserProfile({ onClose, handleDeleteProject }) { // Add handleDel
             projectTitle: project.title,
           }))
         ).filter(req => req.status === 'pending');
-        console.log('Pending negotiation requests:', requests);
 
         setProjects(userProjects);
         setNegotiationRequests(requests);
+
+        // Fetch user's Aadhaar card URL
+        const userResponse = await fetch(`${API_URL}/projects`, {
+          headers: { 
+            'X-User-ID': user.sub,
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const userData = await userResponse.json();
+        const currentUser = userData.find(p => p.userId.auth0Id === user.sub);
+        setAadhaarCardUrl(currentUser?.userId.aadhaarCardUrl || null);
       } catch (err) {
-        console.error('Error fetching projects:', err);
+        console.error('Error fetching user data:', err);
       }
     };
     
-    fetchUserProjects();
-  }, [user.sub]);
+    fetchUserData();
+  }, [user.sub, getAccessTokenSilently]);
+
+  const handleAadhaarUpload = async () => {
+    if (!aadhaarFile) {
+      setUploadError('Please select an Aadhaar card file to upload.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('aadhaar', aadhaarFile);
+
+    try {
+      const token = await getAccessTokenSilently();
+      const response = await fetch(`${API_URL}/upload-aadhaar`, {
+        method: 'POST',
+        headers: {
+          'X-User-ID': user.sub,
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to upload Aadhaar card');
+      }
+
+      const result = await response.json();
+      setAadhaarCardUrl(result.aadhaarCardUrl);
+      setAadhaarFile(null);
+      setUploadError(null);
+      alert('Aadhaar card uploaded successfully!');
+    } catch (err) {
+      setUploadError(err.message);
+      console.error('Error uploading Aadhaar card:', err);
+    }
+  };
 
   const handleRespond = async (projectId, requestId, status) => {
     try {
+      const token = await getAccessTokenSilently();
       const response = await fetch(`${API_URL}/posts/${projectId}/negotiate/${requestId}/respond`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-User-ID': user.sub,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status }),
       });
@@ -62,7 +113,6 @@ export function UserProfile({ onClose, handleDeleteProject }) { // Add handleDel
       }
 
       const updatedProject = await response.json();
-
       setNegotiationRequests(prev => prev.filter(req => req._id !== requestId));
       if (status === 'accepted') {
         setProjects(prev =>
@@ -96,7 +146,6 @@ export function UserProfile({ onClose, handleDeleteProject }) { // Add handleDel
 
   const handleLogout = () => {
     const returnToUrl = `${window.location.origin}/`;
-    console.log('Logging out, redirecting to:', returnToUrl);
     logout({ logoutParams: { returnTo: returnToUrl } });
   };
 
@@ -199,6 +248,44 @@ export function UserProfile({ onClose, handleDeleteProject }) { // Add handleDel
               )}
             </div>
           )}
+
+          {/* Aadhaar Card Section */}
+          <div className="mt-8 space-y-4">
+            <h3 className="text-lg font-semibold">Aadhaar Card</h3>
+            <div className="border rounded-lg p-4">
+              {!aadhaarCardUrl ? (
+                <div className="space-y-4">
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => setAadhaarFile(e.target.files[0])}
+                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  <button
+                    onClick={handleAadhaarUpload}
+                    className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <Upload className="w-5 h-5" />
+                    <span>Upload Aadhaar Card</span>
+                  </button>
+                  {uploadError && <p className="text-red-600 text-sm">{uploadError}</p>}
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">Aadhaar Card Uploaded</p>
+                  <a
+                    href={aadhaarCardUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-2 text-blue-600 hover:underline"
+                  >
+                    <FileText className="w-5 h-5" />
+                    <span>View Document</span>
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
 
           <div className="mt-8 space-y-2">
             <button className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 rounded-lg">

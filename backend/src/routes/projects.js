@@ -11,6 +11,7 @@ const {
 } = require('../controllers/projectController');
 const { negotiateInvestment, respondToNegotiation } = require('../controllers/negotiateInvestment');
 const aiAnalysis = require('../controllers/aiAnalysis');
+const uploadAadhaar = require('../controllers/uploadAadhaar');
 
 const router = express.Router();
 
@@ -25,5 +26,6 @@ router.post('/ai-analysis', aiAnalysis);
 router.post('/posts/:id/negotiate', negotiateInvestment);
 router.post('/posts/:projectId/negotiate/:requestId/respond', respondToNegotiation);
 router.delete('/posts/:id', deleteProject);
+router.post('/upload-aadhaar', uploadAadhaar); // New route
 
 module.exports = router;

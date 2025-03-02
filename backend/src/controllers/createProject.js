@@ -1,4 +1,5 @@
 const Project = require('../models/Project');
+const User = require('../models/User');
 const { upload } = require('../config/multerConfig');
 const { ensureUser } = require('../utils/userUtils');
 const { uploadToS3 } = require('../utils/s3Utils');
@@ -17,13 +18,19 @@ const createProject = [
         return res.status(400).json({ message: 'All project fields are required' });
       }
 
+      // Check if user has uploaded Aadhaar card
+      const user = await User.findOne({ auth0Id: userId });
+      if (!user || !user.aadhaarCardUrl) {
+        return res.status(403).json({ message: 'Please upload your Aadhaar card in your profile before creating a project.' });
+      }
+
       await ensureUser(userId, name, email, userPicture);
 
       let mediaUrl = null;
       if (req.file) {
         const filename = `${Date.now()}-${req.file.originalname}`;
         const s3Response = await uploadToS3(req.file, filename);
-        mediaUrl = s3Response.Location; // URL of the uploaded file
+        mediaUrl = s3Response.Location;
       }
 
       const project = new Project({

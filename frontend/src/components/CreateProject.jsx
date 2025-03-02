@@ -23,7 +23,7 @@ function CreateProject({ onClose }) {
     <ModalContainer>
       <ModalHeader onClose={onClose} />
       <StepProgress step={step} />
-      <ErrorMessage error={error} />
+      <ErrorMessage error={error} /> {/* Displays Aadhaar card error if present */}
       <StepForm
         step={step}
         formData={formData}
