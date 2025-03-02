@@ -24,6 +24,7 @@ export async function fetchProjects(userId, getAccessTokenSilently) {
       title: project.title,
       fundingGoal: project.fundingGoal,
       equityOffered: project.equityOffered,
+      userId: project.userId?.auth0Id || project.userId, // Project creator's ID
     },
     category: project.category,
     currentFunding: project.currentFunding || 0,
@@ -31,6 +32,7 @@ export async function fetchProjects(userId, getAccessTokenSilently) {
     comments: project.comments || [],
     startDate: project.startDate,
     duration: project.duration,
+    escrowTransactions: project.escrowTransactions || [], // Add escrow transactions
   }));
 
   const trending = projects
@@ -87,8 +89,11 @@ export async function investPost(postId, userId, amount) {
     body: JSON.stringify({ userId, amount }),
   });
 
-  if (!response.ok) throw new Error('Failed to invest');
-  return await response.json();
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to invest');
+  }
+  return await response.json(); // Returns { message, project, transactionId }
 }
 
 export async function crowdfundPost(postId, userId, amount) {
@@ -101,8 +106,11 @@ export async function crowdfundPost(postId, userId, amount) {
     body: JSON.stringify({ userId, amount }),
   });
 
-  if (!response.ok) throw new Error('Failed to crowdfund');
-  return await response.json();
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to crowdfund');
+  }
+  return await response.json(); // Returns { message, project, transactionId }
 }
 
 export async function deleteProject(postId, userId) {

@@ -1,6 +1,5 @@
-// File: frontend/src/hooks/usePost.js
+// frontend/src/hooks/usePost.js
 import { useState } from 'react';
-import axios from 'axios';
 
 export function usePost({ id, likes, comments, onLike, onComment, currentFunding, businessDetails, onInvest, onCrowdfund, userSub }) {
   const [showComments, setShowComments] = useState(false);
@@ -8,18 +7,15 @@ export function usePost({ id, likes, comments, onLike, onComment, currentFunding
   const [showInvestModal, setShowInvestModal] = useState(false);
   const [showCrowdfundModal, setShowCrowdfundModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [investmentAmount, setInvestmentAmount] = useState('');
   const [crowdfundAmount, setCrowdfundAmount] = useState('');
   const [selectedReward, setSelectedReward] = useState(null);
   const [error, setError] = useState(null);
-  const [analysisResult, setAnalysisResult] = useState(null);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
 
   const rewards = [
-    { amount: 20, title: 'Early Supporter', description: 'Get exclusive updates and behind-the-scenes content' }, // Changed from 50
-    { amount: 50, title: 'Premium Backer', description: 'Early access to the product + exclusive updates' },      // Changed from 200
-    { amount: 100, title: 'VIP Supporter', description: 'All previous rewards + personalized thank you note' },  // Changed from 500
+    { amount: 20, title: 'Early Supporter', description: 'Get exclusive updates and behind-the-scenes content' },
+    { amount: 50, title: 'Premium Backer', description: 'Early access to the product + exclusive updates' },
+    { amount: 100, title: 'VIP Supporter', description: 'All previous rewards + personalized thank you note' },
   ];
 
   const handleCommentSubmit = (e) => {
@@ -30,34 +26,37 @@ export function usePost({ id, likes, comments, onLike, onComment, currentFunding
     }
   };
 
-  const handleInvest = async (e) => {
-    e.preventDefault();
+  const handleInvest = async () => { // Remove 'e' parameter since it's called directly
     const amount = parseFloat(investmentAmount);
-    if (amount >= 10) { // Updated minimum check to 10
+    if (amount >= 10) {
       setError(null);
       try {
-        await onInvest(id, amount);
+        const response = await onInvest(id, amount); // Call onInvest directly with id and amount
         setShowInvestModal(false);
         setInvestmentAmount('');
+        return response; // Return response for InvestModal
       } catch (err) {
-        setError(err.message);
+        setError(err.message || 'Investment failed');
+        throw err;
       }
     } else {
       setError('Investment amount must be at least $10');
     }
   };
 
-  const handleCrowdfund = async (e) => {
-    e.preventDefault();
+  const handleCrowdfund = async () => { // Remove 'e' parameter
     const amount = parseFloat(crowdfundAmount);
-    if (amount >= 10) { // Minimum remains 10
+    if (amount >= 10) {
       setError(null);
       try {
-        await onCrowdfund(id, amount);
+        const response = await onCrowdfund(id, amount);
         setShowCrowdfundModal(false);
         setCrowdfundAmount('');
+        setSelectedReward(null);
+        return response;
       } catch (err) {
-        setError(err.message);
+        setError(err.message || 'Crowdfunding failed');
+        throw err;
       }
     } else {
       setError('Crowdfunding amount must be at least $10');
@@ -113,11 +112,6 @@ export function usePost({ id, likes, comments, onLike, onComment, currentFunding
     handleCrowdfund,
     handleShare,
     progressPercentage,
-    businessDetails: { ...businessDetails, id }, // Ensure id is included
-    handleInvest,
-    handleCrowdfund,
-    handleShare,
-    progressPercentage,
+    businessDetails: { ...businessDetails, id },
   };
-  
 }

@@ -1,3 +1,4 @@
+// frontend/src/components/BusinessDetails.jsx (assumed)
 import React from 'react';
 import { DollarSign } from 'lucide-react';
 
@@ -41,7 +42,7 @@ function BusinessDetails({
         </div>
         <div className="flex space-x-3 mt-4">
           <button
-            onClick={() => setShowInvestModal(true)} // Opens InvestModal with both options
+            onClick={() => setShowInvestModal(true)} // This should only open the modal
             className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
           >
             <DollarSign className="w-4 h-4" />

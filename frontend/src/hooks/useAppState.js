@@ -93,47 +93,107 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
 
   const handleInvest = async (postId, amount) => {
     try {
+      // Optimistic update with pending escrow transaction
       setPosts((prevPosts) =>
-        prevPosts.map((p) => (p.id === postId ? { ...p, currentFunding: p.currentFunding + amount } : p))
+        prevPosts.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                currentFunding: p.currentFunding + amount,
+                escrowTransactions: [
+                  ...p.escrowTransactions,
+                  { type: 'investment', userId: user.sub, amount, status: 'pending', transactionId: 'pending' },
+                ],
+              }
+            : p
+        )
       );
       updateTrendingProjectsOptimistically(postId, amount);
+
       const updatedProject = await investPost(postId, user.sub, amount);
       setPosts((prevPosts) =>
         prevPosts.map((p) =>
-          p.id === postId ? { ...p, currentFunding: updatedProject.project.currentFunding } : p
+          p.id === postId
+            ? {
+                ...p,
+                currentFunding: updatedProject.project.currentFunding,
+                escrowTransactions: updatedProject.project.escrowTransactions,
+              }
+            : p
         )
       );
       updateTrendingProjects(updatedProject.project);
+
+      return updatedProject; // Return response including transactionId for InvestModal
     } catch (err) {
       console.error('Error investing:', err);
       setPosts((prevPosts) =>
-        prevPosts.map((p) => (p.id === postId ? { ...p, currentFunding: p.currentFunding - amount } : p))
+        prevPosts.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                currentFunding: p.currentFunding - amount,
+                escrowTransactions: p.escrowTransactions.filter((tx) => tx.transactionId !== 'pending'),
+              }
+            : p
+        )
       );
       updateTrendingProjectsOptimistically(postId, -amount);
       setError(err.message);
+      throw err; // Re-throw to allow InvestModal to handle the error
     }
   };
 
   const handleCrowdfund = async (postId, amount) => {
     try {
+      // Optimistic update with pending escrow transaction
       setPosts((prevPosts) =>
-        prevPosts.map((p) => (p.id === postId ? { ...p, currentFunding: p.currentFunding + amount } : p))
+        prevPosts.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                currentFunding: p.currentFunding + amount,
+                escrowTransactions: [
+                  ...p.escrowTransactions,
+                  { type: 'crowdfunding', userId: user.sub, amount, status: 'pending', transactionId: 'pending' },
+                ],
+              }
+            : p
+        )
       );
       updateTrendingProjectsOptimistically(postId, amount);
+
       const updatedProject = await crowdfundPost(postId, user.sub, amount);
       setPosts((prevPosts) =>
         prevPosts.map((p) =>
-          p.id === postId ? { ...p, currentFunding: updatedProject.project.currentFunding } : p
+          p.id === postId
+            ? {
+                ...p,
+                currentFunding: updatedProject.project.currentFunding,
+                escrowTransactions: updatedProject.project.escrowTransactions,
+              }
+            : p
         )
       );
       updateTrendingProjects(updatedProject.project);
+
+      return updatedProject; // Return response including transactionId for CrowdfundModal
     } catch (err) {
       console.error('Error crowdfunding:', err);
       setPosts((prevPosts) =>
-        prevPosts.map((p) => (p.id === postId ? { ...p, currentFunding: p.currentFunding - amount } : p))
+        prevPosts.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                currentFunding: p.currentFunding - amount,
+                escrowTransactions: p.escrowTransactions.filter((tx) => tx.transactionId !== 'pending'),
+              }
+            : p
+        )
       );
       updateTrendingProjectsOptimistically(postId, -amount);
       setError(err.message);
+      throw err; // Re-throw to allow CrowdfundModal to handle the error
     }
   };
 
@@ -220,6 +280,6 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
     handleInvest,
     handleCrowdfund,
     handleProjectCreated,
-    handleDeleteProject, // Expose the delete function
+    handleDeleteProject,
   };
 }

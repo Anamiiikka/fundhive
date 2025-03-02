@@ -26,6 +26,7 @@ function Post({
   userSub,
   onInvest,
   onCrowdfund,
+  escrowTransactions, // Added prop for escrow transactions
 }) {
   const {
     showComments,
@@ -102,8 +103,9 @@ function Post({
         - Equity Offered: ${businessDetails.equityOffered}%
         - Current Funding: $${currentFunding}
         - CIBIL Score: ${cibilScore}
+        - Escrow Transactions: ${JSON.stringify(escrowTransactions)}
 
-        Consider market potential, financial viability, creditworthiness (based on CIBIL score), and funding progress when generating the score and report.
+        Consider market potential, financial viability, creditworthiness (based on CIBIL score), funding progress, and escrow status when generating the score and report.
       `;
 
       const response = await fetch('http://localhost:5000/api/ai-analysis', {
@@ -120,13 +122,33 @@ function Post({
       if (!response.ok) throw new Error('Failed to fetch AI analysis');
 
       const result = await response.json();
-      // Clean up the report points by removing asterisks
       const cleanedReport = result.report.map(point => point.replace(/\*\*/g, '').trim());
       setAnalysisResult({ ...result, report: cleanedReport });
     } catch (err) {
       setAnalysisError(err.message);
     } finally {
       setAnalysisLoading(false);
+    }
+  };
+
+  const handleReleaseEscrow = async () => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/posts/${id}/release-escrow`, {
+        method: 'POST',
+        headers: {
+          'X-User-ID': userSub,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to release escrow');
+      }
+      alert('Escrow funds released successfully!');
+      // Optionally, refetch project data here to update escrowTransactions
+    } catch (err) {
+      console.error('Error releasing escrow:', err);
+      alert('Error releasing escrow: ' + err.message);
     }
   };
 
@@ -214,6 +236,32 @@ function Post({
             )}
           </div>
         )}
+
+        {/* Escrow Transactions Section */}
+        <div className="mt-4">
+          <h4 className="font-semibold text-gray-800">Escrow Transactions</h4>
+          {escrowTransactions && escrowTransactions.length > 0 ? (
+            <ul className="mt-2 space-y-2">
+              {escrowTransactions.map((tx, index) => (
+                <li key={index} className="text-sm text-gray-600">
+                  {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} of ${tx.amount} - 
+                  Status: {tx.status} - 
+                  TxID: <span className="font-mono">{tx.transactionId.slice(0, 10)}...</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-gray-600">No escrow transactions yet.</p>
+          )}
+          {userSub === businessDetails.userId && escrowTransactions.some(tx => tx.status === 'pending') && (
+            <button
+              onClick={handleReleaseEscrow}
+              className="mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Release Escrow Funds
+            </button>
+          )}
+        </div>
       </div>
       <InvestModal
         showInvestModal={showInvestModal}
