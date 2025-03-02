@@ -4,7 +4,7 @@ const getProjectById = require('./getProjectById');
 const likeProject = require('./likeProject');
 const addComment = require('./addComment');
 const investInProject = require('./investInProject');
-const crowdfundProject = require('./crowdfundProject');
+const crowdfundProject = require('./crowdFundProject');
 
 module.exports = {
   createProject,
