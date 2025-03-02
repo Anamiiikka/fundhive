@@ -1,7 +1,4 @@
-// frontend/src/components/BusinessDetails.jsx (assumed)
-import React from 'react';
-import { DollarSign } from 'lucide-react';
-
+import { DollarSign } from 'lucide-react'
 function BusinessDetails({
   businessDetails,
   currentFunding,
@@ -10,6 +7,7 @@ function BusinessDetails({
   setShowCrowdfundModal,
   error,
   cibilScore,
+  fundingGoalReached, // Add this prop
 }) {
   return (
     <div className="mt-6 bg-gray-50 p-4 rounded-lg">
@@ -42,15 +40,21 @@ function BusinessDetails({
         </div>
         <div className="flex space-x-3 mt-4">
           <button
-            onClick={() => setShowInvestModal(true)} // This should only open the modal
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+            onClick={() => setShowInvestModal(true)}
+            className={`bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
+              fundingGoalReached ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+            }`}
+            disabled={fundingGoalReached}
           >
             <DollarSign className="w-4 h-4" />
             <span>Invest Now</span>
           </button>
           <button
             onClick={() => setShowCrowdfundModal(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            className={`bg-green-600 text-white px-4 py-2 rounded-lg transition-colors ${
+              fundingGoalReached ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
+            }`}
+            disabled={fundingGoalReached}
           >
             Crowdfund
           </button>

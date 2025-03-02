@@ -9,9 +9,22 @@ async function crowdfundProject(req, res) {
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
+    // Check if funding goal is already met
+    if (project.currentFunding >= project.fundingGoal) {
+      return res.status(400).json({ message: 'Funding goal has been reached; no further crowdfunding is allowed.' });
+    }
+
     const contributionAmount = Number(amount);
     if (isNaN(contributionAmount) || contributionAmount < 10) {
       return res.status(400).json({ message: 'Crowdfunding amount must be at least $10' });
+    }
+
+    // Check if this contribution would exceed the funding goal
+    const potentialFunding = project.currentFunding + contributionAmount;
+    if (potentialFunding > project.fundingGoal) {
+      return res.status(400).json({
+        message: `Contribution exceeds funding goal. Maximum allowed contribution is $${(project.fundingGoal - project.currentFunding).toFixed(2)}.`,
+      });
     }
 
     // Simulate blockchain escrow transaction
@@ -25,7 +38,7 @@ async function crowdfundProject(req, res) {
     };
 
     project.escrowTransactions.push(escrowTransaction);
-    project.currentFunding = (project.currentFunding || 0) + contributionAmount;
+    project.currentFunding = project.currentFunding + contributionAmount;
 
     // Check if funding goal is reached and release escrow if so
     if (project.currentFunding >= project.fundingGoal) {

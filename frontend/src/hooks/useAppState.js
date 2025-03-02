@@ -93,6 +93,22 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
 
   const handleInvest = async (postId, amount) => {
     try {
+      const post = posts.find((p) => p.id === postId);
+      // Check if funding goal is already met
+      if (post.currentFunding >= post.businessDetails.fundingGoal) {
+        throw new Error('Funding goal has been reached; no further investments are allowed.');
+      }
+
+      // Check if this investment would exceed the funding goal
+      const potentialFunding = post.currentFunding + amount;
+      if (potentialFunding > post.businessDetails.fundingGoal) {
+        throw new Error(
+          `Investment exceeds funding goal. Maximum allowed investment is $${(
+            post.businessDetails.fundingGoal - post.currentFunding
+          ).toFixed(2)}.`
+        );
+      }
+
       setPosts((prevPosts) =>
         prevPosts.map((p) =>
           p.id === postId
@@ -159,6 +175,22 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
 
   const handleCrowdfund = async (postId, amount) => {
     try {
+      const post = posts.find((p) => p.id === postId);
+      // Check if funding goal is already met
+      if (post.currentFunding >= post.businessDetails.fundingGoal) {
+        throw new Error('Funding goal has been reached; no further crowdfunding is allowed.');
+      }
+
+      // Check if this contribution would exceed the funding goal
+      const potentialFunding = post.currentFunding + amount;
+      if (potentialFunding > post.businessDetails.fundingGoal) {
+        throw new Error(
+          `Contribution exceeds funding goal. Maximum allowed contribution is $${(
+            post.businessDetails.fundingGoal - post.currentFunding
+          ).toFixed(2)}.`
+        );
+      }
+
       setPosts((prevPosts) =>
         prevPosts.map((p) =>
           p.id === postId
@@ -261,7 +293,12 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
               fundingPercentage: Math.min((updatedProject.currentFunding / updatedProject.fundingGoal) * 100, 100),
               hoursLeft: Math.max(
                 0,
-                Math.floor((new Date(updatedProject.startDate).getTime() + updatedProject.duration * 24 * 60 * 60 * 1000 - Date.now()) / (1000 * 60 * 60))
+                Math.floor(
+                  (new Date(updatedProject.startDate).getTime() +
+                    updatedProject.duration * 24 * 60 * 60 * 1000 -
+                    Date.now()) /
+                    (1000 * 60 * 60)
+                )
               ),
             }
           : project

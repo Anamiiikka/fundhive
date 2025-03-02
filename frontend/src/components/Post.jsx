@@ -54,6 +54,7 @@ function Post({
     handleCrowdfund,
     handleShare,
     progressPercentage,
+    fundingGoalReached, // Added from usePost
     businessDetails: enhancedBusinessDetails,
   } = usePost({
     id,
@@ -157,6 +158,7 @@ function Post({
           setShowCrowdfundModal={setShowCrowdfundModal}
           error={error}
           cibilScore={cibilScore}
+          fundingGoalReached={fundingGoalReached} // Pass fundingGoalReached to BusinessDetails
         />
         <CommentsSection
           showComments={showComments}

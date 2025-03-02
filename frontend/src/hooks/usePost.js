@@ -18,6 +18,9 @@ export function usePost({ id, likes, comments, onLike, onComment, currentFunding
     { amount: 100, title: 'VIP Supporter', description: 'All previous rewards + personalized thank you note' },
   ];
 
+  const fundingGoalReached = currentFunding >= businessDetails.fundingGoal;
+  const progressPercentage = Math.min((currentFunding / businessDetails.fundingGoal) * 100, 100);
+
   const handleCommentSubmit = (e) => {
     e.preventDefault();
     if (comment.trim()) {
@@ -27,39 +30,73 @@ export function usePost({ id, likes, comments, onLike, onComment, currentFunding
   };
 
   const handleInvest = async () => {
+    if (fundingGoalReached) {
+      setError('Funding goal has been reached; no further investments are allowed.');
+      return;
+    }
+
     const amount = parseFloat(investmentAmount);
-    if (amount >= 10) {
-      setError(null);
-      try {
-        const response = await onInvest(id, amount);
-        setShowInvestModal(false);
-        setInvestmentAmount('');
-        return response;
-      } catch (err) {
-        setError(err.message || 'Investment failed');
-        throw err;
-      }
-    } else {
+    if (amount < 10) {
       setError('Investment amount must be at least $10');
+      return;
+    }
+
+    // Check if this investment would exceed the funding goal
+    const potentialFunding = currentFunding + amount;
+    if (potentialFunding > businessDetails.fundingGoal) {
+      setError(
+        `Investment exceeds funding goal. Maximum allowed investment is $${(
+          businessDetails.fundingGoal - currentFunding
+        ).toFixed(2)}.`
+      );
+      return;
+    }
+
+    setError(null);
+    try {
+      const response = await onInvest(id, amount);
+      setShowInvestModal(false);
+      setInvestmentAmount('');
+      return response;
+    } catch (err) {
+      setError(err.message || 'Investment failed');
+      throw err;
     }
   };
 
   const handleCrowdfund = async () => {
+    if (fundingGoalReached) {
+      setError('Funding goal has been reached; no further crowdfunding is allowed.');
+      return;
+    }
+
     const amount = parseFloat(crowdfundAmount);
-    if (amount >= 10) {
-      setError(null);
-      try {
-        const response = await onCrowdfund(id, amount);
-        setShowCrowdfundModal(false);
-        setCrowdfundAmount('');
-        setSelectedReward(null);
-        return response;
-      } catch (err) {
-        setError(err.message || 'Crowdfunding failed');
-        throw err;
-      }
-    } else {
+    if (amount < 10) {
       setError('Crowdfunding amount must be at least $10');
+      return;
+    }
+
+    // Check if this contribution would exceed the funding goal
+    const potentialFunding = currentFunding + amount;
+    if (potentialFunding > businessDetails.fundingGoal) {
+      setError(
+        `Contribution exceeds funding goal. Maximum allowed contribution is $${(
+          businessDetails.fundingGoal - currentFunding
+        ).toFixed(2)}.`
+      );
+      return;
+    }
+
+    setError(null);
+    try {
+      const response = await onCrowdfund(id, amount);
+      setShowCrowdfundModal(false);
+      setCrowdfundAmount('');
+      setSelectedReward(null);
+      return response;
+    } catch (err) {
+      setError(err.message || 'Crowdfunding failed');
+      throw err;
     }
   };
 
@@ -92,8 +129,6 @@ export function usePost({ id, likes, comments, onLike, onComment, currentFunding
     setShowShareModal(false);
   };
 
-  const progressPercentage = Math.min((currentFunding / businessDetails.fundingGoal) * 100, 100);
-
   return {
     showComments,
     setShowComments,
@@ -118,6 +153,7 @@ export function usePost({ id, likes, comments, onLike, onComment, currentFunding
     handleCrowdfund,
     handleShare,
     progressPercentage,
+    fundingGoalReached, // Expose this to allow UI to disable buttons
     businessDetails: { ...businessDetails, id },
   };
 }
