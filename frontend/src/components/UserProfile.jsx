@@ -82,7 +82,7 @@ export function UserProfile({ onClose }) {
   };
 
   const handleLogout = () => {
-    const returnToUrl = `${window.location.origin}/login`;
+    const returnToUrl = `${window.location.origin}/`;
     console.log('Logging out, redirecting to:', returnToUrl); // Debug log
     logout({ logoutParams: { returnTo: returnToUrl } });
   };
