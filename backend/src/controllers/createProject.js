@@ -1,6 +1,7 @@
 const Project = require('../models/Project');
 const { upload } = require('../config/multerConfig');
 const { ensureUser } = require('../utils/userUtils');
+const { uploadToS3 } = require('../utils/s3Utils');
 
 const createProject = [
   upload.single('media'),
@@ -17,7 +18,13 @@ const createProject = [
       }
 
       await ensureUser(userId, name, email, userPicture);
-      const mediaUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+      let mediaUrl = null;
+      if (req.file) {
+        const filename = `${Date.now()}-${req.file.originalname}`;
+        const s3Response = await uploadToS3(req.file, filename);
+        mediaUrl = s3Response.Location; // URL of the uploaded file
+      }
 
       const project = new Project({
         userId,
