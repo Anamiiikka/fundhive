@@ -1,6 +1,8 @@
+const API_URL = import.meta.env.VITE_API_URL;
+
 export async function fetchProjects(userId, getAccessTokenSilently) {
   const token = await getAccessTokenSilently();
-  const response = await fetch('http://localhost:5000/api/projects', {
+  const response = await fetch(`${API_URL}/projects`, {
     headers: {
       'X-User-ID': userId,
     },
@@ -52,7 +54,7 @@ export async function fetchProjects(userId, getAccessTokenSilently) {
 }
 
 export async function likePost(postId, userId) {
-  const response = await fetch(`http://localhost:5000/api/posts/${postId}/like`, {
+  const response = await fetch(`${API_URL}/posts/${postId}/like`, {
     method: 'POST',
     headers: {
       'X-User-ID': userId,
@@ -66,7 +68,7 @@ export async function likePost(postId, userId) {
 }
 
 export async function commentPost(postId, userId, content) {
-  const response = await fetch(`http://localhost:5000/api/posts/${postId}/comments`, {
+  const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
     method: 'POST',
     headers: {
       'X-User-ID': userId,
@@ -80,7 +82,7 @@ export async function commentPost(postId, userId, content) {
 }
 
 export async function investPost(postId, userId, amount) {
-  const response = await fetch(`http://localhost:5000/api/posts/${postId}/invest`, {
+  const response = await fetch(`${API_URL}/posts/${postId}/invest`, {
     method: 'POST',
     headers: {
       'X-User-ID': userId,
@@ -97,7 +99,7 @@ export async function investPost(postId, userId, amount) {
 }
 
 export async function crowdfundPost(postId, userId, amount) {
-  const response = await fetch(`http://localhost:5000/api/posts/${postId}/crowdfund`, {
+  const response = await fetch(`${API_URL}/posts/${postId}/crowdfund`, {
     method: 'POST',
     headers: {
       'X-User-ID': userId,
@@ -114,7 +116,7 @@ export async function crowdfundPost(postId, userId, amount) {
 }
 
 export async function deleteProject(postId, userId) {
-  const response = await fetch(`http://localhost:5000/api/posts/${postId}`, {
+  const response = await fetch(`${API_URL}/posts/${postId}`, {
     method: 'DELETE',
     headers: {
       'X-User-ID': userId,

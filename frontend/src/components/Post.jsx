@@ -11,6 +11,8 @@ import ShareModal from './ShareModal';
 import { usePost } from '../hooks/usePost';
 import { Brain } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function Post({
   id,
   username,
@@ -108,7 +110,7 @@ function Post({
         Consider market potential, financial viability, creditworthiness (based on CIBIL score), funding progress, and escrow status when generating the score and report.
       `;
 
-      const response = await fetch('http://localhost:5000/api/ai-analysis', {
+      const response = await fetch(`{API_URL}/ai-analysis`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

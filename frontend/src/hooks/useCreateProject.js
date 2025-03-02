@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export function useCreateProject({ onClose }) {
   const { user } = useAuth0();
   const [step, setStep] = useState(1);
@@ -63,7 +65,7 @@ export function useCreateProject({ onClose }) {
     console.log('Submitting project with user.sub:', user.sub); // Debug log
 
     try {
-      const response = await fetch('http://localhost:5000/api/projects', {
+      const response = await fetch(`${API_URL}/projects`, {
         method: 'POST',
         headers: {
           'X-User-ID': user.sub,

@@ -3,6 +3,8 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { X, User, Briefcase, ChevronRight, Settings, LogOut, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export function UserProfile({ onClose, handleDeleteProject }) { // Add handleDeleteProject prop
   const { user, logout } = useAuth0();
   const navigate = useNavigate();
@@ -14,7 +16,7 @@ export function UserProfile({ onClose, handleDeleteProject }) { // Add handleDel
     const fetchUserProjects = async () => {
       try {
         console.log('Logged-in user.sub:', user.sub);
-        const response = await fetch('http://localhost:5000/api/projects', {
+        const response = await fetch(`${API_URL}/projects`, {
           headers: { 'X-User-ID': user.sub },
         });
         if (!response.ok) throw new Error('Failed to fetch projects');
@@ -45,7 +47,7 @@ export function UserProfile({ onClose, handleDeleteProject }) { // Add handleDel
 
   const handleRespond = async (projectId, requestId, status) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${projectId}/negotiate/${requestId}/respond`, {
+      const response = await fetch(`${API_URL}/posts/${projectId}/negotiate/${requestId}/respond`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

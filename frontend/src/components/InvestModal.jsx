@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useAuth0 } from '@auth0/auth0-react';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function InvestModal({ showInvestModal, setShowInvestModal, businessDetails, investmentAmount, setInvestmentAmount, handleInvest }) {
   const { user } = useAuth0();
   const [mode, setMode] = useState('direct');
@@ -53,7 +55,7 @@ function InvestModal({ showInvestModal, setShowInvestModal, businessDetails, inv
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/posts/${businessDetails.id}/negotiate`, {
+      const response = await fetch(`{API_URL}/posts/${businessDetails.id}/negotiate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
