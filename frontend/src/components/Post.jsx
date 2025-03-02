@@ -6,7 +6,7 @@ import PostDescription from './PostDescription';
 import BusinessDetails from './BusinessDetails';
 import CommentsSection from './CommentsSection';
 import InvestModal from './InvestModal';
-import CrowdfundModal from './CrowdfundModal';
+import CrowdfundModal from './CrowdFundModal';
 import ShareModal from './ShareModal';
 import { usePost } from '../hooks/usePost';
 import { Brain } from 'lucide-react';
