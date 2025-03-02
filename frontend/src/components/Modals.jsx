@@ -1,11 +1,19 @@
 import React from 'react';
-import CreateProject from './CreateProject'; // Changed to default import
-import { UserProfile } from './UserProfile'; // Assuming UserProfile is still a named export
+import CreateProject from './CreateProject';
+import { UserProfile } from './UserProfile';
 
-function Modals({ showProfile, setShowProfile, showCreateProject, onCloseCreateProject }) {
+function Modals({
+  showProfile,
+  setShowProfile,
+  showCreateProject,
+  onCloseCreateProject,
+  handleDeleteProject, // Add this prop
+}) {
   return (
     <>
-      {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
+      {showProfile && (
+        <UserProfile onClose={() => setShowProfile(false)} handleDeleteProject={handleDeleteProject} />
+      )}
       {showCreateProject && <CreateProject onClose={onCloseCreateProject} />}
     </>
   );

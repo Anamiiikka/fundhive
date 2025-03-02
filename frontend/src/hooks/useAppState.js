@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchProjects, likePost, commentPost, investPost, crowdfundPost } from '../services/apiService';
+import { fetchProjects, likePost, commentPost, investPost, crowdfundPost, deleteProject } from '../services/apiService';
 
 export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -137,6 +137,19 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
     }
   };
 
+  const handleDeleteProject = async (postId) => {
+    try {
+      await deleteProject(postId, user.sub);
+      setPosts((prevPosts) => prevPosts.filter((p) => p.id !== postId));
+      setTrendingProjects((prevTrending) => prevTrending.filter((p) => p.id !== postId));
+      return true; // Indicate success
+    } catch (err) {
+      console.error('Error deleting project:', err);
+      setError(err.message);
+      return false; // Indicate failure
+    }
+  };
+
   const updateTrendingProjectsOptimistically = (postId, amountDelta) => {
     setTrendingProjects((prevTrending) =>
       prevTrending.map((project) => {
@@ -207,5 +220,6 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
     handleInvest,
     handleCrowdfund,
     handleProjectCreated,
+    handleDeleteProject, // Expose the delete function
   };
 }

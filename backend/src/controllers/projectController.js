@@ -5,6 +5,7 @@ const likeProject = require('./likeProject');
 const addComment = require('./addComment');
 const investInProject = require('./investInProject');
 const crowdfundProject = require('./crowdFundProject');
+const deleteProject = require('./deleteProject');
 
 module.exports = {
   createProject,
@@ -14,4 +15,5 @@ module.exports = {
   addComment,
   investInProject,
   crowdfundProject,
+  deleteProject,
 };

@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
-import { X, User, Briefcase, ChevronRight, Settings, LogOut } from 'lucide-react';
+import { X, User, Briefcase, ChevronRight, Settings, LogOut, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export function UserProfile({ onClose }) {
+export function UserProfile({ onClose, handleDeleteProject }) { // Add handleDeleteProject prop
   const { user, logout } = useAuth0();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('investments');
   const [projects, setProjects] = useState([]);
   const [negotiationRequests, setNegotiationRequests] = useState([]);
 
-  // Fetch user projects and their negotiation requests on mount
   useEffect(() => {
     const fetchUserProjects = async () => {
       try {
@@ -81,9 +80,21 @@ export function UserProfile({ onClose }) {
     }
   };
 
+  const onDeleteProject = async (projectId) => {
+    if (window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+      const success = await handleDeleteProject(projectId);
+      if (success) {
+        setProjects(prev => prev.filter(p => p._id !== projectId));
+        alert('Project deleted successfully!');
+      } else {
+        alert('Failed to delete project. Please try again.');
+      }
+    }
+  };
+
   const handleLogout = () => {
     const returnToUrl = `${window.location.origin}/`;
-    console.log('Logging out, redirecting to:', returnToUrl); // Debug log
+    console.log('Logging out, redirecting to:', returnToUrl);
     logout({ logoutParams: { returnTo: returnToUrl } });
   };
 
@@ -121,23 +132,36 @@ export function UserProfile({ onClose }) {
 
           {activeTab === 'projects' && (
             <div className="space-y-4">
-              {projects.map((project) => (
-                <div key={project._id} className="p-4 border rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium">{project.title}</h4>
-                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-600">{project.status}</span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(project.currentFunding / project.fundingGoal) * 100}%` }}></div>
+              {projects.length === 0 ? (
+                <p className="text-gray-600">No projects created yet.</p>
+              ) : (
+                projects.map((project) => (
+                  <div key={project._id} className="p-4 border rounded-lg relative">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-medium">{project.title}</h4>
+                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-600">{project.status}</span>
                     </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                      <span>Raised: ${project.currentFunding.toLocaleString()}</span>
-                      <span>Goal: ${project.fundingGoal.toLocaleString()}</span>
+                    <div className="space-y-2">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(project.currentFunding / project.fundingGoal) * 100}%` }}></div>
+                      </div>
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>Raised: ${project.currentFunding.toLocaleString()}</span>
+                        <span>Goal: ${project.fundingGoal.toLocaleString()}</span>
+                      </div>
                     </div>
+                    {project.currentFunding === 0 && (
+                      <button
+                        onClick={() => onDeleteProject(project._id)}
+                        className="absolute top-2 right-2 px-2 py-1 bg-red-600 text-white rounded-lg flex items-center space-x-1 hover:bg-red-700 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete</span>
+                      </button>
+                    )}
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
 

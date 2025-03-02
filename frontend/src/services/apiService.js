@@ -104,3 +104,20 @@ export async function crowdfundPost(postId, userId, amount) {
   if (!response.ok) throw new Error('Failed to crowdfund');
   return await response.json();
 }
+
+export async function deleteProject(postId, userId) {
+  const response = await fetch(`http://localhost:5000/api/posts/${postId}`, {
+    method: 'DELETE',
+    headers: {
+      'X-User-ID': userId,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to delete project');
+  }
+
+  return await response.json();
+}

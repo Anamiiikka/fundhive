@@ -1,5 +1,14 @@
 const express = require('express');
-const { createProject, getProjects, getProjectById, likeProject, addComment, investInProject, crowdfundProject } = require('../controllers/projectController');
+const {
+  createProject,
+  getProjects,
+  getProjectById,
+  likeProject,
+  addComment,
+  investInProject,
+  crowdfundProject,
+  deleteProject,
+} = require('../controllers/projectController');
 const { negotiateInvestment, respondToNegotiation } = require('../controllers/negotiateInvestment');
 const aiAnalysis = require('../controllers/aiAnalysis');
 
@@ -15,5 +24,6 @@ router.post('/posts/:id/crowdfund', crowdfundProject);
 router.post('/ai-analysis', aiAnalysis);
 router.post('/posts/:id/negotiate', negotiateInvestment);
 router.post('/posts/:projectId/negotiate/:requestId/respond', respondToNegotiation);
+router.delete('/posts/:id', deleteProject);
 
 module.exports = router;
