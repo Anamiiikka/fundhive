@@ -110,7 +110,7 @@ function Post({
         Consider market potential, financial viability, creditworthiness (based on CIBIL score), funding progress, and escrow status when generating the score and report.
       `;
 
-      const response = await fetch(`{API_URL}/ai-analysis`, {
+      const response = await fetch(`${API_URL}/ai-analysis`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
