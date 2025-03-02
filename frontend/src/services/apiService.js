@@ -17,7 +17,7 @@ export async function fetchProjects(userId, getAccessTokenSilently) {
     userAvatar: project.userId?.avatarUrl || 'https://via.placeholder.com/64',
     content: {
       type: project.mediaUrl?.includes('.mp4') ? 'video' : 'image',
-      url: project.mediaUrl ? `http://localhost:5000${project.mediaUrl}` : 'https://via.placeholder.com/400',
+      url: project.mediaUrl || 'https://via.placeholder.com/400',
     },
     description: project.description,
     businessDetails: {
