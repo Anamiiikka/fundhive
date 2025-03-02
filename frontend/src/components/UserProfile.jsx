@@ -22,7 +22,6 @@ export function UserProfile({ onClose }) {
         const data = await response.json();
         console.log('Fetched projects:', data.map(project => ({ _id: project._id, userId: project.userId })));
 
-        // Filter projects where userId.auth0Id matches user.sub
         const userProjects = data.filter(project => project.userId && project.userId.auth0Id === user.sub);
         console.log('User projects:', userProjects);
 
@@ -43,9 +42,8 @@ export function UserProfile({ onClose }) {
     };
     
     fetchUserProjects();
-  }, [user.sub]); // Dependency array here
+  }, [user.sub]);
 
-  // Handle accept/reject actions
   const handleRespond = async (projectId, requestId, status) => {
     try {
       const response = await fetch(`http://localhost:5000/api/posts/${projectId}/negotiate/${requestId}/respond`, {
@@ -64,13 +62,12 @@ export function UserProfile({ onClose }) {
 
       const updatedProject = await response.json();
 
-      // Update local state
-      setNegotiationRequests(prev => prev.filter(req => req._id !== requestId)); // Remove from pending requests
+      setNegotiationRequests(prev => prev.filter(req => req._id !== requestId));
       if (status === 'accepted') {
         setProjects(prev =>
           prev.map(p =>
             p._id === projectId
-              ? { ...p, currentFunding: updatedProject.project.currentFunding } // Update funding with server response
+              ? { ...p, currentFunding: updatedProject.project.currentFunding }
               : p
           )
         );
@@ -85,7 +82,9 @@ export function UserProfile({ onClose }) {
   };
 
   const handleLogout = () => {
-    logout({ logoutParams: { returnTo: window.location.origin + '/login' } });
+    const returnToUrl = `${window.location.origin}/login`;
+    console.log('Logging out, redirecting to:', returnToUrl); // Debug log
+    logout({ logoutParams: { returnTo: returnToUrl } });
   };
 
   return (
@@ -116,7 +115,6 @@ export function UserProfile({ onClose }) {
 
           {activeTab === 'investments' && (
             <div className="space-y-4">
-              {/* Placeholder for investments */}
               <p className="text-gray-600">No investments yet.</p>
             </div>
           )}
