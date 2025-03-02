@@ -1,11 +1,17 @@
-// frontend/src/components/InvestModal.jsx
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { useAuth0 } from '@auth0/auth0-react';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-function InvestModal({ showInvestModal, setShowInvestModal, businessDetails, investmentAmount, setInvestmentAmount, handleInvest }) {
+function InvestModal({
+  showInvestModal,
+  setShowInvestModal,
+  businessDetails,
+  investmentAmount,
+  setInvestmentAmount,
+  handleInvest,
+}) {
   const { user } = useAuth0();
   const [mode, setMode] = useState('direct');
   const [proposedAmount, setProposedAmount] = useState('');
@@ -16,7 +22,7 @@ function InvestModal({ showInvestModal, setShowInvestModal, businessDetails, inv
   if (!showInvestModal) return null;
 
   const handleDirectInvestment = async (e) => {
-    e.preventDefault(); // Prevent form submission from refreshing the page
+    e.preventDefault();
     const amount = parseFloat(investmentAmount);
     if (amount < 10) {
       setError('Investment amount must be at least $10');
@@ -30,9 +36,16 @@ function InvestModal({ showInvestModal, setShowInvestModal, businessDetails, inv
     }
 
     try {
-      const response = await handleInvest(); // Call handleInvest without passing the event
-      setTransactionId(response.transactionId);
-      setError(null);
+      const response = await handleInvest(businessDetails.id, amount);
+      // Safeguard against undefined response
+      if (!response) {
+        setError('Investment exceeds the goal');
+      } else if (response.error) {
+        setError(response.error);
+      } else {
+        setTransactionId(response.transactionId);
+        setError(null);
+      }
     } catch (err) {
       console.error('Error processing investment:', err);
       setError(err.message || 'Investment failed');
@@ -55,7 +68,7 @@ function InvestModal({ showInvestModal, setShowInvestModal, businessDetails, inv
     }
 
     try {
-      const response = await fetch(`{API_URL}/posts/${businessDetails.id}/negotiate`, {
+      const response = await fetch(`${API_URL}/posts/${businessDetails.id}/negotiate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,13 +110,17 @@ function InvestModal({ showInvestModal, setShowInvestModal, businessDetails, inv
         <div className="flex space-x-4 mb-4">
           <button
             onClick={() => setMode('direct')}
-            className={`flex-1 py-2 rounded-lg ${mode === 'direct' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            className={`flex-1 py-2 rounded-lg ${
+              mode === 'direct' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
           >
             Direct Investment
           </button>
           <button
             onClick={() => setMode('negotiate')}
-            className={`flex-1 py-2 rounded-lg ${mode === 'negotiate' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+            className={`flex-1 py-2 rounded-lg ${
+              mode === 'negotiate' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
           >
             Negotiate
           </button>
@@ -146,7 +163,11 @@ function InvestModal({ showInvestModal, setShowInvestModal, businessDetails, inv
                   />
                 </div>
                 <p className="mt-2 text-sm text-gray-600">
-                  Estimated equity: {investmentAmount ? ((parseFloat(investmentAmount) / businessDetails.fundingGoal) * businessDetails.equityOffered).toFixed(2) : '0'}%
+                  Estimated equity:{' '}
+                  {investmentAmount
+                    ? ((parseFloat(investmentAmount) / businessDetails.fundingGoal) * businessDetails.equityOffered).toFixed(2)
+                    : '0'}
+                  %
                 </p>
               </div>
               {error && <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg">{error}</div>}

@@ -93,13 +93,19 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
 
   const handleInvest = async (postId, amount) => {
     try {
+      if (!posts || !Array.isArray(posts)) {
+        throw new Error('Posts data is not available');
+      }
+  
       const post = posts.find((p) => p.id === postId);
-      // Check if funding goal is already met
+      if (!post) {
+        throw new Error('Post not found');
+      }
+  
       if (post.currentFunding >= post.businessDetails.fundingGoal) {
         throw new Error('Funding goal has been reached; no further investments are allowed.');
       }
-
-      // Check if this investment would exceed the funding goal
+  
       const potentialFunding = post.currentFunding + amount;
       if (potentialFunding > post.businessDetails.fundingGoal) {
         throw new Error(
@@ -108,7 +114,7 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
           ).toFixed(2)}.`
         );
       }
-
+  
       setPosts((prevPosts) =>
         prevPosts.map((p) =>
           p.id === postId
@@ -124,7 +130,7 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
         )
       );
       updateTrendingProjectsOptimistically(postId, amount);
-
+  
       const updatedProject = await investPost(postId, user.sub, amount);
       setPosts((prevPosts) =>
         prevPosts.map((p) =>
@@ -138,8 +144,7 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
         )
       );
       updateTrendingProjects(updatedProject.project);
-
-      // Add notification if funding goal is reached and escrow is released
+  
       if (updatedProject.project.currentFunding >= updatedProject.project.fundingGoal) {
         setNotifications((prev) => [
           ...prev,
@@ -152,36 +157,40 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
           },
         ]);
       }
-
-      return updatedProject; // Return response including transactionId for InvestModal
+  
+      return updatedProject; // Success: { message, project, transactionId }
     } catch (err) {
       console.error('Error investing:', err);
-      setPosts((prevPosts) =>
-        prevPosts.map((p) =>
-          p.id === postId
-            ? {
-                ...p,
-                currentFunding: p.currentFunding - amount,
-                escrowTransactions: p.escrowTransactions.filter((tx) => tx.transactionId !== 'pending'),
-              }
-            : p
-        )
-      );
-      updateTrendingProjectsOptimistically(postId, -amount);
+      // Ensure rollback only if post exists
+      const post = posts && posts.find((p) => p.id === postId);
+      if (post) {
+        setPosts((prevPosts) =>
+          prevPosts.map((p) =>
+            p.id === postId
+              ? {
+                  ...p,
+                  currentFunding: p.currentFunding - amount,
+                  escrowTransactions: p.escrowTransactions.filter((tx) => tx.transactionId !== 'pending'),
+                }
+              : p
+          )
+        );
+        updateTrendingProjectsOptimistically(postId, -amount);
+      }
       setError(err.message);
-      throw err; // Re-throw to allow InvestModal to handle the error
+      return { error: err.message, transactionId: null }; // Always return an object
     }
   };
 
   const handleCrowdfund = async (postId, amount) => {
     try {
       const post = posts.find((p) => p.id === postId);
-      // Check if funding goal is already met
+      if (!post) throw new Error('Post not found');
+
       if (post.currentFunding >= post.businessDetails.fundingGoal) {
         throw new Error('Funding goal has been reached; no further crowdfunding is allowed.');
       }
 
-      // Check if this contribution would exceed the funding goal
       const potentialFunding = post.currentFunding + amount;
       if (potentialFunding > post.businessDetails.fundingGoal) {
         throw new Error(
@@ -221,7 +230,6 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
       );
       updateTrendingProjects(updatedProject.project);
 
-      // Add notification if funding goal is reached and escrow is released
       if (updatedProject.project.currentFunding >= updatedProject.project.fundingGoal) {
         setNotifications((prev) => [
           ...prev,
@@ -235,7 +243,7 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
         ]);
       }
 
-      return updatedProject; // Return response including transactionId for CrowdfundModal
+      return updatedProject; // Success: { message, project, transactionId }
     } catch (err) {
       console.error('Error crowdfunding:', err);
       setPosts((prevPosts) =>
@@ -251,7 +259,7 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
       );
       updateTrendingProjectsOptimistically(postId, -amount);
       setError(err.message);
-      throw err; // Re-throw to allow CrowdfundModal to handle the error
+      return { error: err.message, transactionId: null }; // Error response
     }
   };
 
@@ -260,11 +268,11 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
       await deleteProject(postId, user.sub);
       setPosts((prevPosts) => prevPosts.filter((p) => p.id !== postId));
       setTrendingProjects((prevTrending) => prevTrending.filter((p) => p.id !== postId));
-      return true; // Indicate success
+      return true;
     } catch (err) {
       console.error('Error deleting project:', err);
       setError(err.message);
-      return false; // Indicate failure
+      return false;
     }
   };
 

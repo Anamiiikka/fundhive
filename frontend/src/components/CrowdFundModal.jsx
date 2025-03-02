@@ -40,9 +40,14 @@ function CrowdfundModal({
     }
 
     try {
-      const response = await handleCrowdfund(businessDetails.id, amount); // Call handleCrowdfund with project ID
-      setTransactionId(response.transactionId); // Set the mock blockchain transaction ID
-      setError(null);
+      const response = await handleCrowdfund(businessDetails.id, amount);
+      if (response.error) {
+        setError(response.error);
+      } else {
+        setTransactionId(response.transactionId);
+        setError(null);
+        // Optionally keep form values until modal closes, but resetting can be done on close
+      }
     } catch (err) {
       console.error('Error processing crowdfunding:', err);
       setError(err.message || 'Crowdfunding failed');
@@ -92,7 +97,9 @@ function CrowdfundModal({
                     }}
                     className={cn(
                       'w-full p-4 rounded-lg border-2 text-left transition-all',
-                      selectedReward && selectedReward.amount === reward.amount ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
+                      selectedReward && selectedReward.amount === reward.amount
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
                     )}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -106,7 +113,9 @@ function CrowdfundModal({
             </div>
             <form onSubmit={handleCrowdfundSubmit}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Custom Contribution Amount (USD)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Custom Contribution Amount (USD)
+                </label>
                 <div className="relative">
                   <span className="absolute left-3 top-2 text-gray-500">$</span>
                   <input
