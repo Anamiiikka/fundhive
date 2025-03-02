@@ -26,15 +26,15 @@ export function usePost({ id, likes, comments, onLike, onComment, currentFunding
     }
   };
 
-  const handleInvest = async () => { // Remove 'e' parameter since it's called directly
+  const handleInvest = async () => {
     const amount = parseFloat(investmentAmount);
     if (amount >= 10) {
       setError(null);
       try {
-        const response = await onInvest(id, amount); // Call onInvest directly with id and amount
+        const response = await onInvest(id, amount);
         setShowInvestModal(false);
         setInvestmentAmount('');
-        return response; // Return response for InvestModal
+        return response;
       } catch (err) {
         setError(err.message || 'Investment failed');
         throw err;
@@ -44,7 +44,7 @@ export function usePost({ id, likes, comments, onLike, onComment, currentFunding
     }
   };
 
-  const handleCrowdfund = async () => { // Remove 'e' parameter
+  const handleCrowdfund = async () => {
     const amount = parseFloat(crowdfundAmount);
     if (amount >= 10) {
       setError(null);
@@ -64,21 +64,27 @@ export function usePost({ id, likes, comments, onLike, onComment, currentFunding
   };
 
   const handleShare = (platform) => {
-    const url = window.location.href;
+    // Use environment variable for base URL, fallback to current origin
+    const baseUrl = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+    const postUrl = `${baseUrl}/posts/${id}`; // Construct post-specific URL
     const text = `Check out ${businessDetails.title} on FundHive!`;
+
     switch (platform) {
       case 'copy':
-        navigator.clipboard.writeText(url);
-        alert('Link copied to clipboard!');
+        navigator.clipboard.writeText(postUrl);
+        alert('Post link copied to clipboard!');
         break;
       case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`);
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(postUrl)}`, '_blank');
         break;
       case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`);
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`, '_blank');
         break;
       case 'linkedin':
-        window.open(`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`);
+        window.open(
+          `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(postUrl)}&title=${encodeURIComponent(text)}`,
+          '_blank'
+        );
         break;
       default:
         break;
