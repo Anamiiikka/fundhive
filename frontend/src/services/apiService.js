@@ -1,3 +1,4 @@
+// frontend/src/services/apiService.js
 const API_URL = import.meta.env.VITE_API_URL;
 
 export async function fetchProjects(userId, getAccessTokenSilently) {
@@ -5,6 +6,7 @@ export async function fetchProjects(userId, getAccessTokenSilently) {
   const response = await fetch(`${API_URL}/projects`, {
     headers: {
       'X-User-ID': userId,
+      Authorization: `Bearer ${token}`, // Added for consistency with authentication
     },
   });
 
@@ -51,6 +53,46 @@ export async function fetchProjects(userId, getAccessTokenSilently) {
     .slice(0, 3);
 
   return { posts, trending };
+}
+
+export async function fetchProjectById(postId, userId, getAccessTokenSilently) {
+  const token = await getAccessTokenSilently();
+  const response = await fetch(`${API_URL}/projects/${postId}`, {
+    headers: {
+      'X-User-ID': userId,
+      Authorization: `Bearer ${token}`, // Ensure authentication
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to fetch project');
+  }
+
+  const project = await response.json();
+  return {
+    id: project._id,
+    username: project.userId?.username || 'Unknown User',
+    userAvatar: project.userId?.avatarUrl || 'https://via.placeholder.com/64',
+    content: {
+      type: project.mediaUrl?.includes('.mp4') ? 'video' : 'image',
+      url: project.mediaUrl || 'https://via.placeholder.com/400',
+    },
+    description: project.description,
+    businessDetails: {
+      title: project.title,
+      fundingGoal: project.fundingGoal,
+      equityOffered: project.equityOffered,
+      userId: project.userId?.auth0Id || project.userId,
+    },
+    category: project.category,
+    currentFunding: project.currentFunding || 0,
+    likes: project.likes || [],
+    comments: project.comments || [],
+    startDate: project.startDate,
+    duration: project.duration,
+    escrowTransactions: project.escrowTransactions || [],
+  };
 }
 
 export async function likePost(postId, userId) {

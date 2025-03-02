@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import Post from './Post';
-import { fetchProjects } from '../services/apiService';
+import { fetchProjectById } from '../services/apiService'; // Updated import
 
 function PostPage() {
-  const { id } = useParams(); // Get post ID from URL
+  const { id } = useParams();
   const { user, isAuthenticated, getAccessTokenSilently } = useAuth0();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,10 +16,8 @@ function PostPage() {
     if (isAuthenticated) {
       const loadPost = async () => {
         try {
-          const { posts } = await fetchProjects(user.sub, getAccessTokenSilently);
-          const foundPost = posts.find((p) => p.id === id);
-          if (!foundPost) throw new Error('Post not found');
-          setPost(foundPost);
+          const fetchedPost = await fetchProjectById(id, user.sub, getAccessTokenSilently);
+          setPost(fetchedPost);
         } catch (err) {
           setError(err.message);
         } finally {
@@ -35,7 +33,7 @@ function PostPage() {
   if (error) return <div>Error: {error}</div>;
   if (!post) return <div>Post not found.</div>;
 
-  const handleLike = () => {}; // Placeholder or implement as needed
+  const handleLike = () => {}; // Implement as needed
   const handleComment = () => {};
   const handleInvest = () => {};
   const handleCrowdfund = () => {};
