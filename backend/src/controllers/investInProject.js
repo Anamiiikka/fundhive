@@ -21,15 +21,25 @@ async function investInProject(req, res) {
       userId,
       amount: investmentAmount,
       transactionId,
-      status: 'pending', // Funds held in escrow until conditions met
+      status: 'pending',
     };
 
     project.escrowTransactions.push(escrowTransaction);
     project.currentFunding = (project.currentFunding || 0) + investmentAmount;
+
+    // Check if funding goal is reached and release escrow if so
+    if (project.currentFunding >= project.fundingGoal) {
+      project.escrowTransactions = project.escrowTransactions.map(tx => 
+        tx.status === 'pending' ? { ...tx, status: 'released' } : tx
+      );
+    }
+
     await project.save();
 
     res.status(200).json({ 
-      message: 'Investment successful - held in escrow', 
+      message: project.currentFunding >= project.fundingGoal 
+        ? 'Investment successful - funding goal reached, escrow released' 
+        : 'Investment successful - held in escrow', 
       project, 
       transactionId 
     });

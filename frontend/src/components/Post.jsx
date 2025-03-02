@@ -26,7 +26,7 @@ function Post({
   userSub,
   onInvest,
   onCrowdfund,
-  escrowTransactions, // Added prop for escrow transactions
+  escrowTransactions,
 }) {
   const {
     showComments,
@@ -131,27 +131,6 @@ function Post({
     }
   };
 
-  const handleReleaseEscrow = async () => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/posts/${id}/release-escrow`, {
-        method: 'POST',
-        headers: {
-          'X-User-ID': userSub,
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to release escrow');
-      }
-      alert('Escrow funds released successfully!');
-      // Optionally, refetch project data here to update escrowTransactions
-    } catch (err) {
-      console.error('Error releasing escrow:', err);
-      alert('Error releasing escrow: ' + err.message);
-    }
-  };
-
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden max-w-2xl mx-auto my-8">
       <PostHeader username={username} userAvatar={userAvatar} />
@@ -253,14 +232,7 @@ function Post({
           ) : (
             <p className="text-sm text-gray-600">No escrow transactions yet.</p>
           )}
-          {userSub === businessDetails.userId && escrowTransactions.some(tx => tx.status === 'pending') && (
-            <button
-              onClick={handleReleaseEscrow}
-              className="mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Release Escrow Funds
-            </button>
-          )}
+          {/* Removed the "Release Escrow Funds" button */}
         </div>
       </div>
       <InvestModal

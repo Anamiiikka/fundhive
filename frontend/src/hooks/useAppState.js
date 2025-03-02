@@ -93,7 +93,6 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
 
   const handleInvest = async (postId, amount) => {
     try {
-      // Optimistic update with pending escrow transaction
       setPosts((prevPosts) =>
         prevPosts.map((p) =>
           p.id === postId
@@ -124,6 +123,20 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
       );
       updateTrendingProjects(updatedProject.project);
 
+      // Add notification if funding goal is reached and escrow is released
+      if (updatedProject.project.currentFunding >= updatedProject.project.fundingGoal) {
+        setNotifications((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            type: 'milestone',
+            message: `${updatedProject.project.title} reached its funding goal! Escrow funds released.`,
+            timestamp: new Date(),
+            read: false,
+          },
+        ]);
+      }
+
       return updatedProject; // Return response including transactionId for InvestModal
     } catch (err) {
       console.error('Error investing:', err);
@@ -146,7 +159,6 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
 
   const handleCrowdfund = async (postId, amount) => {
     try {
-      // Optimistic update with pending escrow transaction
       setPosts((prevPosts) =>
         prevPosts.map((p) =>
           p.id === postId
@@ -176,6 +188,20 @@ export function useAppState({ user, isAuthenticated, getAccessTokenSilently }) {
         )
       );
       updateTrendingProjects(updatedProject.project);
+
+      // Add notification if funding goal is reached and escrow is released
+      if (updatedProject.project.currentFunding >= updatedProject.project.fundingGoal) {
+        setNotifications((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            type: 'milestone',
+            message: `${updatedProject.project.title} reached its funding goal! Escrow funds released.`,
+            timestamp: new Date(),
+            read: false,
+          },
+        ]);
+      }
 
       return updatedProject; // Return response including transactionId for CrowdfundModal
     } catch (err) {

@@ -21,15 +21,25 @@ async function crowdfundProject(req, res) {
       userId,
       amount: contributionAmount,
       transactionId,
-      status: 'pending', // Funds held in escrow
+      status: 'pending',
     };
 
     project.escrowTransactions.push(escrowTransaction);
     project.currentFunding = (project.currentFunding || 0) + contributionAmount;
+
+    // Check if funding goal is reached and release escrow if so
+    if (project.currentFunding >= project.fundingGoal) {
+      project.escrowTransactions = project.escrowTransactions.map(tx => 
+        tx.status === 'pending' ? { ...tx, status: 'released' } : tx
+      );
+    }
+
     await project.save();
 
     res.status(200).json({ 
-      message: 'Crowdfunding contribution successful - held in escrow', 
+      message: project.currentFunding >= project.fundingGoal 
+        ? 'Crowdfunding contribution successful - funding goal reached, escrow released' 
+        : 'Crowdfunding contribution successful - held in escrow', 
       project, 
       transactionId 
     });
