@@ -9,7 +9,7 @@ import InvestModal from './InvestModal';
 import CrowdfundModal from './CrowdFundModal';
 import ShareModal from './ShareModal';
 import { usePost } from '../hooks/usePost';
-import { Brain } from 'lucide-react';
+import { Brain, Lock } from 'lucide-react'; // Added Lock icon for escrow button
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -82,6 +82,7 @@ function Post({
   const [analysisResult, setAnalysisResult] = useState(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState(null);
+  const [showEscrow, setShowEscrow] = useState(false); // New state for escrow visibility
 
   const fetchAIAnalysis = async () => {
     setAnalysisLoading(true);
@@ -218,23 +219,33 @@ function Post({
           </div>
         )}
 
-        {/* Escrow Transactions Section */}
-        <div className="mt-4">
-          <h4 className="font-semibold text-gray-800">Escrow Transactions</h4>
-          {escrowTransactions && escrowTransactions.length > 0 ? (
-            <ul className="mt-2 space-y-2">
-              {escrowTransactions.map((tx, index) => (
-                <li key={index} className="text-sm text-gray-600">
-                  {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} of ${tx.amount} - 
-                  Status: {tx.status} - 
-                  TxID: <span className="font-mono">{tx.transactionId.slice(0, 10)}...</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-gray-600">No escrow transactions yet.</p>
+        {/* Escrow Transactions Section with Toggle Button */}
+        <div className="mt-6">
+          <button
+            onClick={() => setShowEscrow(!showEscrow)}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Lock className="w-5 h-5" />
+            <span>{showEscrow ? 'Hide Escrow Transactions' : 'Show Escrow Transactions'}</span>
+          </button>
+          {showEscrow && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="font-semibold text-gray-800 mb-2">Escrow Transactions</h4>
+              {escrowTransactions && escrowTransactions.length > 0 ? (
+                <ul className="space-y-2">
+                  {escrowTransactions.map((tx, index) => (
+                    <li key={index} className="text-sm text-gray-600">
+                      {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} of ${tx.amount} - 
+                      Status: <span className={`font-medium ${tx.status === 'released' ? 'text-green-600' : 'text-yellow-600'}`}>{tx.status}</span> - 
+                      TxID: <span className="font-mono">{tx.transactionId.slice(0, 10)}...</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-600">No escrow transactions yet.</p>
+              )}
+            </div>
           )}
-          {/* Removed the "Release Escrow Funds" button */}
         </div>
       </div>
       <InvestModal
