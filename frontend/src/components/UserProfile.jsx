@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { X, User, Briefcase, ChevronRight, Settings, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -7,15 +7,82 @@ export function UserProfile({ onClose }) {
   const { user, logout } = useAuth0();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('investments');
+  const [projects, setProjects] = useState([]);
+  const [negotiationRequests, setNegotiationRequests] = useState([]);
 
-  const investments = [
-    { id: '1', projectName: 'AI Workspace Pro', amount: 5000, equity: 0.5, date: '2024-03-15' },
-    { id: '2', projectName: 'SolarTech Solutions', amount: 10000, equity: 1.2, date: '2024-03-10' },
-  ];
+  // Fetch user projects and their negotiation requests on mount
+  useEffect(() => {
+    const fetchUserProjects = async () => {
+      try {
+        console.log('Logged-in user.sub:', user.sub);
+        const response = await fetch('http://localhost:5000/api/projects', {
+          headers: { 'X-User-ID': user.sub },
+        });
+        if (!response.ok) throw new Error('Failed to fetch projects');
+        const data = await response.json();
+        console.log('Fetched projects:', data.map(project => ({ _id: project._id, userId: project.userId })));
 
-  const projects = [
-    { id: '1', name: 'EcoFriendly Packaging', status: 'active', raised: 75000, goal: 100000 },
-  ];
+        // Filter projects where userId.auth0Id matches user.sub
+        const userProjects = data.filter(project => project.userId && project.userId.auth0Id === user.sub);
+        console.log('User projects:', userProjects);
+
+        const requests = userProjects.flatMap(project => 
+          project.negotiationRequests.map(req => ({
+            ...req,
+            projectId: project._id,
+            projectTitle: project.title,
+          }))
+        ).filter(req => req.status === 'pending');
+        console.log('Pending negotiation requests:', requests);
+
+        setProjects(userProjects);
+        setNegotiationRequests(requests);
+      } catch (err) {
+        console.error('Error fetching projects:', err);
+      }
+    };
+    
+    fetchUserProjects();
+  }, [user.sub]); // Dependency array here
+
+  // Handle accept/reject actions
+  const handleRespond = async (projectId, requestId, status) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/posts/${projectId}/negotiate/${requestId}/respond`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-ID': user.sub,
+        },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to respond to negotiation');
+      }
+
+      const updatedProject = await response.json();
+
+      // Update local state
+      setNegotiationRequests(prev => prev.filter(req => req._id !== requestId)); // Remove from pending requests
+      if (status === 'accepted') {
+        setProjects(prev =>
+          prev.map(p =>
+            p._id === projectId
+              ? { ...p, currentFunding: updatedProject.project.currentFunding } // Update funding with server response
+              : p
+          )
+        );
+        alert('Negotiation accepted successfully! Funds have been added to the project.');
+      } else {
+        alert('Negotiation rejected successfully.');
+      }
+    } catch (err) {
+      console.error('Error responding to negotiation:', err);
+      alert(`Failed to ${status} negotiation: ${err.message}`);
+    }
+  };
 
   const handleLogout = () => {
     logout({ logoutParams: { returnTo: window.location.origin + '/login' } });
@@ -31,13 +98,8 @@ export function UserProfile({ onClose }) {
               <X className="w-6 h-6" />
             </button>
           </div>
-          
           <div className="flex items-center space-x-4">
-            <img
-              src={user?.picture || 'https://via.placeholder.com/64'}
-              alt="Profile"
-              className="w-16 h-16 rounded-full object-cover"
-            />
+            <img src={user?.picture || 'https://via.placeholder.com/64'} alt="Profile" className="w-16 h-16 rounded-full object-cover" />
             <div>
               <h3 className="font-semibold">{user?.name || 'User'}</h3>
               <p className="text-sm text-gray-600">{user?.email || 'email@example.com'}</p>
@@ -46,49 +108,34 @@ export function UserProfile({ onClose }) {
         </div>
 
         <div className="p-6">
-          <div className="flex space-x-4 mb-6">
-            <button
-              onClick={() => setActiveTab('investments')}
-              className={`flex-1 py-2 text-center rounded-lg ${
-                activeTab === 'investments'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              Investments
-            </button>
-            <button
-              onClick={() => setActiveTab('projects')}
-              className={`flex-1 py-2 text-center rounded-lg ${
-                activeTab === 'projects'
-                  ? 'bg-blue-100 text-blue-600'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              My Projects
-            </button>
+          <div className="flex space-x-2 mb-6 overflow-x-auto">
+            <button onClick={() => setActiveTab('investments')} className={`flex-1 py-2 text-center rounded-lg ${activeTab === 'investments' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Investments</button>
+            <button onClick={() => setActiveTab('projects')} className={`flex-1 py-2 text-center rounded-lg ${activeTab === 'projects' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>My Projects</button>
+            <button onClick={() => setActiveTab('negotiations')} className={`flex-1 py-2 text-center rounded-lg ${activeTab === 'negotiations' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Negotiations</button>
           </div>
 
           {activeTab === 'investments' && (
             <div className="space-y-4">
-              {investments.map((investment) => (
-                <div key={investment.id} className="p-4 border rounded-lg">
+              {/* Placeholder for investments */}
+              <p className="text-gray-600">No investments yet.</p>
+            </div>
+          )}
+
+          {activeTab === 'projects' && (
+            <div className="space-y-4">
+              {projects.map((project) => (
+                <div key={project._id} className="p-4 border rounded-lg">
                   <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium">{investment.projectName}</h4>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                    <h4 className="font-medium">{project.title}</h4>
+                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-600">{project.status}</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-600">Amount</p>
-                      <p className="font-medium">${investment.amount.toLocaleString()}</p>
+                  <div className="space-y-2">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(project.currentFunding / project.fundingGoal) * 100}%` }}></div>
                     </div>
-                    <div>
-                      <p className="text-gray-600">Equity</p>
-                      <p className="font-medium">{investment.equity}%</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">Date</p>
-                      <p className="font-medium">{investment.date}</p>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Raised: ${project.currentFunding.toLocaleString()}</span>
+                      <span>Goal: ${project.fundingGoal.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -96,30 +143,36 @@ export function UserProfile({ onClose }) {
             </div>
           )}
 
-          {activeTab === 'projects' && (
+          {activeTab === 'negotiations' && (
             <div className="space-y-4">
-              {projects.map((project) => (
-                <div key={project.id} className="p-4 border rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-medium">{project.name}</h4>
-                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-600">
-                      {project.status}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full"
-                        style={{ width: `${(project.raised / project.goal) * 100}%` }}
-                      ></div>
+              {negotiationRequests.length === 0 ? (
+                <p className="text-gray-600">No pending negotiation requests.</p>
+              ) : (
+                negotiationRequests.map((request) => (
+                  <div key={request._id} className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-2">{request.projectTitle}</h4>
+                    <div className="text-sm text-gray-600">
+                      <p>Proposed Amount: ${request.proposedAmount.toLocaleString()}</p>
+                      <p>Proposed Equity: {request.proposedEquity}%</p>
+                      <p>Investor ID: {request.investorId}</p>
                     </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                      <span>Raised: ${project.raised.toLocaleString()}</span>
-                      <span>Goal: ${project.goal.toLocaleString()}</span>
+                    <div className="mt-4 flex space-x-2">
+                      <button
+                        onClick={() => handleRespond(request.projectId, request._id, 'accepted')}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleRespond(request.projectId, request._id, 'rejected')}
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                      >
+                        Reject
+                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
 
@@ -131,15 +184,12 @@ export function UserProfile({ onClose }) {
               </div>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 rounded-lg text-red-600"
-            >
+            <button onClick={handleLogout} className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 rounded-lg text-red-600">
               <div className="flex items-center space-x-3">
                 <LogOut className="w-5 h-5" />
                 <span>Log out</span>
               </div>
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
           </div>
         </div>

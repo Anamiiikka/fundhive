@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -15,6 +16,13 @@ function CrowdfundModal({
 }) {
   if (!showCrowdfundModal) return null;
 
+  // Define updated rewards
+  const updatedRewards = [
+    { amount: 20, title: 'Early Supporter', description: 'Get exclusive updates and behind-the-scenes content' },
+    { amount: 50, title: 'Premium Backer', description: 'Early access to the product + exclusive updates' },
+    { amount: 100, title: 'VIP Supporter', description: 'All previous rewards + personalized thank you note' },
+  ];
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -27,7 +35,7 @@ function CrowdfundModal({
         <div className="mb-6">
           <h4 className="text-lg font-medium mb-3">Select a Reward</h4>
           <div className="space-y-3">
-            {rewards.map((reward) => (
+            {updatedRewards.map((reward) => (
               <button
                 key={reward.amount}
                 onClick={() => {

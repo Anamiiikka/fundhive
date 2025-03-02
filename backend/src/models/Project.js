@@ -15,6 +15,13 @@ const projectSchema = new mongoose.Schema({
   comments: [{ userId: String, content: String, createdAt: { type: Date, default: Date.now } }],
   createdAt: { type: Date, default: Date.now },
   startDate: { type: Date, default: Date.now }, // Added for accurate time tracking
+  negotiationRequests: [{
+    investorId: { type: String, required: true },
+    proposedAmount: { type: Number, required: true },
+    proposedEquity: { type: Number, required: true },
+    status: { type: String, default: 'pending', enum: ['pending', 'accepted', 'rejected'] },
+    createdAt: { type: Date, default: Date.now }
+  }]
 });
 
 module.exports = mongoose.model('Project', projectSchema);

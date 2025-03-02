@@ -60,6 +60,7 @@ export function useCreateProject({ onClose }) {
     if (formData.media) {
       formDataToSend.append('media', formData.media);
     }
+    console.log('Submitting project with user.sub:', user.sub); // Debug log
 
     try {
       const response = await fetch('http://localhost:5000/api/projects', {
